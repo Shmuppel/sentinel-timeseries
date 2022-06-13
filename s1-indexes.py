@@ -20,4 +20,3 @@ Starting Date : 2022/06/13 (Monday)
 # Create a list/table with min-max (dB)
 
 # Calculate and export the indexes
-
