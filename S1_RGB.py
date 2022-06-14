@@ -6,7 +6,11 @@
 # https://appdividend.com/2022/01/19/python-unzip/#:~:text=To%20unzip%20a%20file%20in,inbuilt%20python%20module%20called%20zipfile.
 from zipfile import ZipFile
 with ZipFile('E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip', 'r') as zipObj:
-    # Extract all the contents of zip file in current directory
-    zipObj.extractall()
+    listOfFileNames = zipObj.namelist()
+    for fileName in listOfFileNames:
+        if fileName.endswith('.tiff'):
+            # Extract a single file from zip
+            zipObj.extract(fileName, 'temp_tiff')
+            print('All the TIFF files are extracted in temp_tiff')
 
 
