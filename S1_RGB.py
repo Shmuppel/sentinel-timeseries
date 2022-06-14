@@ -13,4 +13,12 @@ with ZipFile('E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A
             zipObj.extract(fileName, 'temp_tiff')
             print('All the TIFF files are extracted in temp_tiff')
 
-
+# Open TIFF files, suppressing maximum amount of pixels error
+import os
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+dirname = 'temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement'
+vh_name = 's1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff'
+vv_name = 's1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff'
+vh_backscatter = Image.open(os.path.join(dirname, vh_name))
+vv_backscatter = Image.open(os.path.join(dirname, vv_name))
