@@ -11,6 +11,7 @@ from osgeo import gdal
 import geopandas as gpd
 from matplotlib import pyplot as plt
 import rasterio
+from rasterio.mask import mask
 
 import numpy as np
 from rasterio.plot import show
@@ -30,11 +31,11 @@ band1_1 = rasterio.open("./Data/L1C_T31UFU_A032223_20210823T105351/IMG_DATA/T31U
 #### https://earthpy.readthedocs.io/en/latest/gallery_vignettes/plot_raster_stack_crop.html ####
 
 #   Shapefiles
-AOI_GDF = gpd.read_file('./Data/Polygon.geojson')
+AOI_GDF = gpd.read_file('./resources/study_area/Polygon.geojson')
 crs = 4326
 AOI_GDF = AOI_GDF.to_crs(epsg=crs)
 AOI_GDF.plot(aspect=1)
-# plt.show() Problem with plot ValueError: 'box_aspect' and 'fig_aspect' must be positive
+plt.show() # Problem with plot ValueError: 'box_aspect' and 'fig_aspect' must be positive
 
 
 
