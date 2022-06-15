@@ -67,57 +67,12 @@ crs = 4326
 AOI_GDF = AOI_GDF.to_crs(epsg=crs)
 AOI_GDF.plot(aspect=1)
 
-
 #### Create stack of vv, vh, vv/vh ####
 S1_RGB = np.dstack((vv_dB, vh_dB, vv_vh_ratio))
 
-#Conversion factor
-max_value_vv_vh_ratio = np.max((vv_dB_max, vh_dB_max, vv_vh_ratio_max))
-cf = max_value_vv_vh_ratio / 256
-r = vv_dB * cf
-print('min r', np.min(r), 'max r', np.max(r))
-g = vh_dB * cf
-print('min g', np.min(g), 'max g', np.max(g))
-b = vv_vh_ratio * cf
-print('min b', np.min(b), 'max b', np.max(b))
-
-#### Display as RGB image ####
-from PIL import Image
-rgbArray = np.zeros((16683,26323,3), 'float16')
-rgbArray[..., 0] = r*256
-rgbArray[..., 1] = g*256
-rgbArray[..., 2] = b*256
-img = Image.fromarray(rgbArray)
-img.save('temp_tiff/RGB.jpeg')
+#### Display RGB
+#echo 1 > /proc/sys/vm/overcommit_memory
+#plt.imshow(S1_RGB)
+#plt.show()
 
 
-#### Crop RGB stack ####
-def get_image_data(image_path, zone, resample=None):
-
-    with rasterio.open(image_path) as ds:
-        epsg = ds.crs.to_epsg()
-        # Crop raster -- get bounding window of shape(s) in raster.
-        window = rasterio.features.geometry_window(ds, [zone])
-        window_transform = ds.window_transform(window)
-        # Either set a new shape for the data or use the window's shape.
-        shape = (resample[0], resample[1]) if isinstance(resample, tuple) else (window.height, window.width)
-        # Limit raster to window, apply resampling if desired.
-        data = ds.read(
-            out_shape=shape,
-            window=window,
-            resampling=Resampling.cubic
-        )
-        transform = window_transform * window_transform.scale((window.width / data.shape[-1]), (window.height / data.shape[-2]))
-        # Apply geometry mask.
-        geometry_mask = rasterio.features.geometry_mask([zone_polygon], data[0].shape, transform)
-        band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.int16, fill_value=0)
-
-        return band_masked
-
-
-
-AOI_WGS84 = gpd.read_file('resources/study_area/Polygon_WGS84.geojson')
-print("AOI_WGS84", AOI_WGS84.crs)
-geoms = AOI_WGS84.geometry.values
-geometry = geoms[0]
-geoms = [mapping(geoms[0])]
