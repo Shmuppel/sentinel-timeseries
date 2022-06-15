@@ -6,33 +6,57 @@ Date: 2022/06/14 (Tue)
 
 # Import Packages
 import os
+import fiona
 from osgeo import gdal
 import geopandas as gpd
 from matplotlib import pyplot as plt
 import rasterio
+
 import numpy as np
-from rasterio import plot
+from rasterio.plot import show
 
 # Create directories
-if not os.path.exists('Data'): os.makedirs('Data')
+if os.path.exists('Data'):
+    pass
+else:
+    os.makedirs('Data')
 
 # Import Data
 #   Raster / Images
-
-# Create a data directory within the directory where this script is run if it does not exist yet and store file
-# bands = r'./Data/L1C_T31UFU_A032223_20210823T105351/IMG_DATA/'
 band1 = gdal.Open("./Data/L1C_T31UFU_A032223_20210823T105351/IMG_DATA/T31UFU_20210823T105031_B01.jp2")
 band1_1 = rasterio.open("./Data/L1C_T31UFU_A032223_20210823T105351/IMG_DATA/T31UFU_20210823T105031_B01.jp2")
-
 
 # how to create a stack
 #### https://earthpy.readthedocs.io/en/latest/gallery_vignettes/plot_raster_stack_crop.html ####
 
 #   Shapefiles
-jsonGDF = gpd.read_file('./Data/Polygon.geojson')
+AOI_GDF = gpd.read_file('./Data/Polygon.geojson')
+crs = 4326
+AOI_GDF = AOI_GDF.to_crs(epsg=crs)
+AOI_GDF.plot(aspect=1)
+# plt.show() Problem with plot ValueError: 'box_aspect' and 'fig_aspect' must be positive
 
-# Transform AOI crs to Sentinel crs
-project_crs = 4326  # Sentinels CRS
-jsonGDF = jsonGDF.to_crs(epsg=project_crs)
-jsonGDF.plot(aspect=1)
-plt.show()
+
+
+# %%
+
+#get band names
+bandPath = './Data/L1C_T31UFU_A032223_20210823T105351/IMG_DATA'
+bandNames = os.listdir(bandPath)
+print(bandNames)
+
+# clip all bands
+for band in bandNames:
+    rasterPath = os.path.join(bandPath, band)
+    rasterBand = rasterio.open(rasterPath)
+    outImage, outTransform = mask(rasterBand, AOI_GDF, crop=True)
+    outMeta = rasterBand.meta
+    outMeta.update({"driver": 'JP2OpenJPEG',
+                    "height": outImage.shape[1],
+                    "width": outImage.shape[2],
+                    "transform": outTransform})
+    outPath = os.path.join('./rst', band)
+    outRaster = rasterio.open(outPath, "w", **outMeta)
+    outRaster.write(outImage)
+    outRaster.close()
+#%%
