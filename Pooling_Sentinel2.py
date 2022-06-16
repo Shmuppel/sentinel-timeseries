@@ -18,7 +18,7 @@ def calculate_normalized_index(band1, band2):
     return (band1 - band2) / (band1 + band2)
 
 
-def get_study_area(file_path):
+def get_study_area(file_path: str):
     """ Returns the study area as shapely Polygon. """
     with open(file_path, 'r') as f:
         aoi_json = json.load(f)['features']
@@ -37,10 +37,11 @@ def get_image_data(
   resample: Resamples the image to given dimensions.
   """
     with rasterio.open(image_path) as ds:
-        tfm = partial(pyproj.transform,
-                      pyproj.Proj(28992),  # Assuming the study / crop area is in RD New
-                      pyproj.Proj(ds.crs.to_epsg() if ds.crs else 32631))  # The CRS as specified in the image
-        crop_shape = shapely.ops.transform(tfm, crop_shape)
+        transformer = partial(pyproj.transform,
+                              pyproj.Proj(28992),  # Assuming the study / crop area is in RD New
+                              pyproj.Proj(ds.crs.to_epsg() if ds.crs else 4326))  # The CRS as specified in the image
+        print(f'Satellite image CRS: {ds.crs.to_epsg()}')
+        crop_shape = shapely.ops.transform(transformer, crop_shape)
         bounding_box = box(*crop_shape.bounds)
 
         # Crop raster -- get bounding window of shape(s) in raster.
@@ -80,7 +81,7 @@ def main():
     NDMI_GAO = calculate_normalized_index(nirarray, swirarray)
     NDMI_McFeeters = calculate_normalized_index(greenarray, nirarray)
     ModifiedNDMI_Xu = calculate_normalized_index(greenarray, swirarray)
-
+    breakpoint()
     show(NDMI_GAO, title='GAO NDWI', cmap='gist_ncar')
     show(ModifiedNDMI_Xu, title='ModifiedMDWI', cmap='gist_ncar')
     show(NDMI_McFeeters, title='MDWI McFeeters', cmap='gist_ncar')
