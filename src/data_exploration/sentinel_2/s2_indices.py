@@ -3,15 +3,15 @@ from src.util import *
 
 
 def main():
-    aoi_json = get_study_area('../../../resources/study_area/Polygon.geojson')
+    aoi_json = get_study_area('resources/study_area/Polygon.geojson')
     # load green band
-    green_image = "../../resources/images/IMG_DATA/T31UFU_20210823T105031_B03.jp2"
+    green_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B03.jp2"
     green_array = get_image_data(green_image, aoi_json)
     # # load NIR Band
-    nir_image = "../../resources/images/IMG_DATA/T31UFU_20210823T105031_B08.jp2"
+    nir_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B08.jp2"
     nir_array = get_image_data(nir_image, aoi_json)
     # load SWIR Data
-    swir_image = "../../resources/images/IMG_DATA/T31UFU_20210823T105031_B11.jp2"
+    swir_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B11.jp2"
     swir_array = get_image_data(swir_image, aoi_json, resample=green_array.shape)
 
     ndwi_gao = calculate_normalized_index(nir_array, swir_array)
