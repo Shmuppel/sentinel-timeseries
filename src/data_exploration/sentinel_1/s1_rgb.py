@@ -16,23 +16,38 @@ from matplotlib import pyplot as plt
 
 
 #### Unzip tiff files ####
+from src.util import get_study_area, get_image_data
+
 with ZipFile('E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip', 'r') as zipObj:
     listOfFileNames = zipObj.namelist()
     for fileName in listOfFileNames:
         if fileName.endswith('.tiff'):
             # Extract a single file from zip
-            zipObj.extract(fileName, 'temp_tiff')
+            zipObj.extract(fileName, 'src/data_exploration/sentinel_1/temp_tiff')
             print('All the TIFF files are extracted in temp_tiff')
 
 
 #### Open TIFF files using gdal ####
-dirname = 'temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement'
+dirname = 'src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement'
 vh_name = 's1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff'
 vv_name = 's1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff'
 vh_backscatter = gdal.Open(os.path.join(dirname, vh_name))
 vv_backscatter = gdal.Open(os.path.join(dirname, vv_name))
-data_vh = vh_backscatter.ReadAsArray()
-data_vv = vv_backscatter.ReadAsArray()
+
+output_raster_vh = "src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif"
+output_raster_vv = "src/data_exploration/sentinel_1/temp_tiff/vv_warp.tif"
+vh_warp = gdal.Warp(output_raster_vh, vh_backscatter, dstSRS="+init=epsg:4326")
+vv_warp = gdal.Warp(output_raster_vv, vv_backscatter, dstSRS="+init=epsg:4326")
+
+
+#Get study area
+study_area = get_study_area("resources/study_area/Polygon.geojson")
+get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif", study_area)
+breakpoint()
+
+
+data_vh = vh_warp.ReadAsArray()
+data_vv = vv_warp.ReadAsArray()
 
 
 #### Convert from backscatter to dB ####
@@ -41,6 +56,11 @@ vv_dB = np.log10(data_vv, out=np.zeros_like(data_vv, dtype='float32'), where=(da
 vh_dB = np.log10(data_vh, out=np.zeros_like(data_vh, dtype='float32'), where=(data_vh!=0))
 vh_dB = vh_dB.astype('float16')
 vv_dB = vv_dB.astype('float16')
+
+
+
+plt.imshow(vh_dB)
+plt.show()
 
 #Check if it does something (yes!)
 vh_dB_max = np.max(vh_dB)
@@ -67,9 +87,5 @@ AOI_GDF.plot(aspect=1)
 #### Create stack of vv, vh, vv/vh ####
 S1_RGB = np.dstack((vv_dB, vh_dB, vv_vh_ratio))
 
-#### Display RGB
-#echo 1 > /proc/sys/vm/overcommit_memory
-#plt.imshow(S1_RGB)
-#plt.show()
 
 

@@ -42,6 +42,7 @@ def get_image_data(
         bounding_box = box(*crop_shape.bounds)
 
         # Crop raster -- get bounding window of shape(s) in raster.
+        breakpoint()
         window = rasterio.features.geometry_window(ds, [bounding_box])
         window_transform = ds.window_transform(window)
         # Either set a new shape for the data or use the window's shape.
