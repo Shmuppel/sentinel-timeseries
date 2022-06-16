@@ -1,12 +1,9 @@
 #### Import Packages ####
 from zipfile import ZipFile
-import gdal
+from osgeo import gdal  # does this work for you?
 import os
 import numpy as np
 import geopandas as gpd
-import rasterio
-from rasterio.mask import mask
-from shapely.geometry import mapping
 from matplotlib import pyplot as plt
 
 

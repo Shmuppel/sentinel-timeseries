@@ -3,7 +3,7 @@ from src.util import *
 
 
 def main():
-    aoi_json = get_study_area('../../resources/study_area/Polygon.geojson')
+    aoi_json = get_study_area('../../../resources/study_area/Polygon.geojson')
     # load green band
     green_image = "../../resources/images/IMG_DATA/T31UFU_20210823T105031_B03.jp2"
     green_array = get_image_data(green_image, aoi_json)
