@@ -25,8 +25,7 @@ S1A_20210619_VV = "..."
 S1A_20211022_VV = "..."
 aoi = gpd.read_file("...")
 
-#           1. Creating B-Box
-
+#           1. Creating B-Box | From parcels / from geometry bbox / from qgis->geojson
 # B-Box 1
 
 # B-Box 2
@@ -41,4 +40,4 @@ zona_list_1 = zonal_stats("...shp...", "...tif...", stats="count min median mean
 averages = statistics.mean(var1, var2, var3)
 
 #           3.1 Export results
-# ??right txt file??
+# ??wright txt file??
