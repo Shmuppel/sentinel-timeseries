@@ -11,22 +11,21 @@ Title: Calculate threshold (dB) based classification of pooling
 # 4. Come up with threshold
 
 #           Import packages
+import rasterio, numpy, fiona, statistics
+import geopandas as gpd
 from osgeo import gdal
 from rasterstats import zonal_stats
-import rasterio
-import numpy
-import fiona
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import rasterio.plot as rplt
+
+# import matplotlib.pyplot as plt
+# import rasterio.plot as rplt
 
 #           Import Data
 S1A_20200218_VV = rasterio.open("...")
 S1A_20210619_VV = "..."
 S1A_20211022_VV = "..."
-aoi = "..."
+aoi = gpd.read_file("...")
 
-#           Creating B-Box
+#           1. Creating B-Box
 
 # B-Box 1
 
@@ -35,11 +34,11 @@ aoi = "..."
 # B-Box 3
 
 
-#           Zonal Statistics /rasterstats/
-zonal_stats("...shp...", "...tif...", stats="count min median mean max")
+#           2. Zonal Statistics /rasterstats/
+zona_list_1 = zonal_stats("...shp...", "...tif...", stats="count min median mean max std")
 
-#           Calculate Averages
+#           3. Calculate Averages
+averages = statistics.mean(var1, var2, var3)
 
-
-#           Export results
-
+#           3.1 Export results
+# ??right txt file??
