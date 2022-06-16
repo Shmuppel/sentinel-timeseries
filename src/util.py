@@ -61,4 +61,4 @@ def get_image_data(
         geometry_mask = rasterio.features.geometry_mask([crop_shape], data[0].shape, geometry_transform)
         band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.int16, fill_value=0)
 
-        return band_masked
+        return band_masked, geometry_transform
