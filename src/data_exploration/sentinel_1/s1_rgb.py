@@ -3,8 +3,6 @@ from zipfile import ZipFile
 from osgeo import gdal  # does this work for you?
 import os
 import numpy as np
-import geopandas as gpd
-from matplotlib import pyplot as plt
 
 
 #### Links to Sentinel 1 images ####
@@ -18,74 +16,70 @@ from matplotlib import pyplot as plt
 #### Unzip tiff files ####
 from src.util import get_study_area, get_image_data
 
-with ZipFile('E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip', 'r') as zipObj:
-    listOfFileNames = zipObj.namelist()
-    for fileName in listOfFileNames:
-        if fileName.endswith('.tiff'):
-            # Extract a single file from zip
-            zipObj.extract(fileName, 'src/data_exploration/sentinel_1/temp_tiff')
-            print('All the TIFF files are extracted in temp_tiff')
+
+def extract_tif_from_zip():
+    with ZipFile('E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip', 'r') as zipObj:
+        listOfFileNames = zipObj.namelist()
+        for fileName in listOfFileNames:
+            if fileName.endswith('.tiff'):
+                # Extract a single file from zip
+                zipObj.extract(fileName, 'src/data_exploration/sentinel_1/temp_tiff')
+                print('All the TIFF files are extracted in temp_tiff')
 
 
-#### Open TIFF files using gdal ####
-dirname = 'src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement'
-vh_name = 's1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff'
-vv_name = 's1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff'
-vh_backscatter = gdal.Open(os.path.join(dirname, vh_name))
-vv_backscatter = gdal.Open(os.path.join(dirname, vv_name))
+def warp_tif_files():
+    #### Open TIFF files using gdal ####
+    dirname = 'src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement'
+    vh_name = 's1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff'
+    vv_name = 's1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff'
+    vh_backscatter = gdal.Open(os.path.join(dirname, vh_name))
+    vv_backscatter = gdal.Open(os.path.join(dirname, vv_name))
 
-output_raster_vh = "src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif"
-output_raster_vv = "src/data_exploration/sentinel_1/temp_tiff/vv_warp.tif"
-vh_warp = gdal.Warp(output_raster_vh, vh_backscatter, dstSRS="+init=epsg:4326")
-vv_warp = gdal.Warp(output_raster_vv, vv_backscatter, dstSRS="+init=epsg:4326")
-
-
-#Get study area
-study_area = get_study_area("resources/study_area/Polygon.geojson")
-get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif", study_area)
-breakpoint()
+    output_raster_vh = "src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif"
+    output_raster_vv = "src/data_exploration/sentinel_1/temp_tiff/vv_warp.tif"
+    vh_warp = gdal.Warp(output_raster_vh, vh_backscatter, dstSRS="+init=epsg:4326")
+    vv_warp = gdal.Warp(output_raster_vv, vv_backscatter, dstSRS="+init=epsg:4326")
 
 
-data_vh = vh_warp.ReadAsArray()
-data_vv = vv_warp.ReadAsArray()
+def convert_to_decibel():
+    # Convert to dB
+    vv_dB = np.log10(data_vv, out=np.zeros_like(data_vv, dtype='float32'), where=(data_vv != 0))
+    vh_dB = np.log10(data_vh, out=np.zeros_like(data_vh, dtype='float32'), where=(data_vh != 0))
+    vh_dB = vh_dB.astype('float16')
+    vv_dB = vv_dB.astype('float16')
+    return vv_dB, vh_dB
 
 
-#### Convert from backscatter to dB ####
-# Convert to dB
-vv_dB = np.log10(data_vv, out=np.zeros_like(data_vv, dtype='float32'), where=(data_vv!=0))
-vh_dB = np.log10(data_vh, out=np.zeros_like(data_vh, dtype='float32'), where=(data_vh!=0))
-vh_dB = vh_dB.astype('float16')
-vv_dB = vv_dB.astype('float16')
+def calculate_ratio(vv_dB, vh_dB):
+    #### Calculate vv-vh ratio ####
+    vv_vh_ratio = vv_dB - vh_dB
+    # Check if it works
+    assert np.min(vv_vh_ratio) != -np.inf
+    # vv_vh_ratio_max = np.max(vv_vh_ratio)
 
 
-
-plt.imshow(vh_dB)
-plt.show()
-
-#Check if it does something (yes!)
-vh_dB_max = np.max(vh_dB)
-vh_dB_min = np.min(vh_dB)
-vv_dB_max = np.max(vv_dB)
-vv_dB_min = np.min(vv_dB)
+def stack_arrays():
+    #### Create stack of vv, vh, vv/vh ####
+    S1_RGB = np.dstack((vv_dB, vh_dB, vv_vh_ratio))
 
 
-#### Calculate vv-vh ratio ####
-vv_vh_ratio = vv_dB - vh_dB
-plt.imshow(vv_vh_ratio)
-plt.show()
-#Check if it works
-vv_vh_ratio_min = np.min(vv_vh_ratio)
-vv_vh_ratio_max = np.max(vv_vh_ratio)
+def main():
+    # extract tif files from a zip file
+    extract_tif_from_zip()
+    # open tif files with gdal
+    warp_tif_files()
+
+    # warp tif files to epsg 4326
+    study_area = get_study_area("resources/study_area/Polygon.geojson")
+    get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif", study_area)
+
+    # get study area
+    # get image data from warped tif files
+    # convert arrays to decibels
+    # calculate VV / VH ratio
+    # stack VV, VH, RATIO becomes a ndarray
+    stack_arrays()
 
 
-#### Load AOI ####
-AOI_GDF = gpd.read_file('resources/study_area/Polygon_WGS84.geojson')
-crs = 4326
-AOI_GDF = AOI_GDF.to_crs(epsg=crs)
-AOI_GDF.plot(aspect=1)
-
-#### Create stack of vv, vh, vv/vh ####
-S1_RGB = np.dstack((vv_dB, vh_dB, vv_vh_ratio))
-
-
-
+if __name__ == '__main__':
+    main()
