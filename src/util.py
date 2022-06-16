@@ -1,14 +1,11 @@
-# A code that calculates the Indices based on downloaded Sentinel 2 data
 import json
-from functools import partial
-
 import numpy as np
 import pyproj
+from functools import partial
 import rasterio
 import rasterio.features
-import shapely
 from rasterio.enums import Resampling
-from rasterio.plot import show
+import shapely
 from shapely.geometry import shape, box
 from shapely.ops import transform
 
@@ -57,35 +54,10 @@ def get_image_data(
             resampling=Resampling.cubic
         )
         # We have to transform the window (our cropped view) to a resampled view if we resampled.
-        transform = window_transform * window_transform.scale((window.width / data.shape[-1]),
-                                                              (window.height / data.shape[-2]))
+        geometry_transform = window_transform * window_transform.scale((window.width / data.shape[-1]),
+                                                                       (window.height / data.shape[-2]))
         # Apply geometry mask.
-        geometry_mask = rasterio.features.geometry_mask([crop_shape], data[0].shape, transform)
+        geometry_mask = rasterio.features.geometry_mask([crop_shape], data[0].shape, geometry_transform)
         band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.int16, fill_value=0)
 
         return band_masked
-
-
-def main():
-    aoi_json = get_study_area('./resources/study_area/Polygon.geojson')
-    # load green band
-    homegreen = "./resources/IMG_DATA/T31UFU_20210823T105031_B03.jp2"
-    greenarray = get_image_data(homegreen, aoi_json)
-    # # load NIR Band
-    homenir = "./resources/IMG_DATA/T31UFU_20210823T105031_B08.jp2"
-    nirarray = get_image_data(homenir, aoi_json)
-    # load SWIR Data
-    homeswir = "./resources/IMG_DATA/T31UFU_20210823T105031_B11.jp2"
-    swirarray = get_image_data(homeswir, aoi_json, resample=greenarray.shape)
-
-    NDMI_GAO = calculate_normalized_index(nirarray, swirarray)
-    NDMI_McFeeters = calculate_normalized_index(greenarray, nirarray)
-    ModifiedNDMI_Xu = calculate_normalized_index(greenarray, swirarray)
-    breakpoint()
-    show(NDMI_GAO, title='GAO NDWI', cmap='gist_ncar')
-    show(ModifiedNDMI_Xu, title='ModifiedMDWI', cmap='gist_ncar')
-    show(NDMI_McFeeters, title='MDWI McFeeters', cmap='gist_ncar')
-
-
-if __name__ == '__main__':
-    main()
