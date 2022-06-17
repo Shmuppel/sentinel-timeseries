@@ -4,6 +4,9 @@ from osgeo import gdal
 import os
 import numpy as np
 from matplotlib import pyplot as plt
+import rasterio.plot as rplt
+from rasterio.plot import show
+
 
 
 #### Links to Sentinel 1 images ####
@@ -98,15 +101,13 @@ def main():
 
     # convert arrays to decibels
     vv_db, vh_db = convert_to_decibel(vv, vh)
-    breakpoint()
+
     # calculate VV / VH ratio
     vv_vh_ratio = calculate_ratio(vv_db, vh_db)
 
     # stack VV, VH, RATIO becomes a ndarray
     s1_rgb = stack_arrays(vv_db, vh_db, vv_vh_ratio)
 
-    plt.imshow(s1_rgb)
-    plt.show()
 
 if __name__ == '__main__':
     main()

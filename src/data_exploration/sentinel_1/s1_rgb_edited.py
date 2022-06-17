@@ -54,11 +54,7 @@ def calculate_ratio(vv_db, vh_db):
     return vv_vh_ratio
 
 
-def stack_arrays(vv_db, vh_db, vv_vh_ratio):
-    # Create stack of vv, vh, vv/vh
-    s1_rgb = np.stack((vv_db, vh_db, vv_vh_ratio))
-    print('Stack rgb done')
-    return s1_rgb
+
 
 
 def min_max_norm(band):
@@ -66,35 +62,48 @@ def min_max_norm(band):
     return (band - band_min) / (band_max - band_min)
 
 
+def stack_arrays(vv, vh, ratio):
+    # Create stack of vv, vh, vv/vh
+    s1_rgb = np.stack((vv, vh, ratio))
+    print('Stack rgb done')
+    return s1_rgb
+
 def main():
     zip_name = 'E:\ACt\S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip'
     output_folder = 'src/data_exploration/sentinel_1/temp_tiff'
 
     # extract tif files from a zip file
-    # extract_tif_from_zip(zip_name, output_folder)
+    #extract_tif_from_zip(zip_name, output_folder)
 
     # open with gdal
-    #vv_backscatter = gdal.Open('../../../resources/images/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff')
-    #vh_backscatter = gdal.Open('../../../resources/images/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff')
+    vv_backscatter = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff')
+    vh_backscatter = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff')
 
     # warp to epsg 4326
-    #vv_warped = gdal.Warp('../../../resources/images/warped_vv.tiff', vv_backscatter, dstSRS="EPSG:4326")
-    #vh_warped = gdal.Warp('../../../resources/images/warped_vh.tiff', vh_backscatter, dstSRS="EPSG:4326")
+    vv_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff', vv_backscatter, dstSRS="EPSG:4326")
+    print('vv files are warped')
+    vh_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff', vh_backscatter, dstSRS="EPSG:4326")
+    print('vh files are warped')
 
     # get study area
-    study_area = get_study_area("../../../resources/study_area/Polygon.geojson")
+    study_area = get_study_area("resources/study_area/Polygon.geojson")
+
     # get image data from warped tif files
-    vv = get_image_data("../../../resources/images/warped_vv.tiff", study_area)
-    vh = get_image_data("../../../resources/images/warped_vh.tiff", study_area)
+    vv = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff", study_area)
+    vh = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff", study_area)
+    print('Image data study area acquired')
 
     # convert arrays to decibels
     vv_db, vh_db = convert_to_decibel(vv, vh)
+
     # calculate VV / VH ratio
     vv_vh_ratio = calculate_ratio(vv_db, vh_db)
+    print('Ratio calculated')
 
     vv_db_norm = min_max_norm(vv_db)
     vh_db_norm = min_max_norm(vh_db)
     ratio_norm = min_max_norm(vv_vh_ratio)
+    print('Normalise the three bands')
 
     # stack VV, VH, RATIO becomes a ndarray
     s1_rgb = stack_arrays(vv_db_norm, vh_db_norm, ratio_norm)
