@@ -1,11 +1,9 @@
 import json
 import numpy as np
 import pyproj
-from functools import partial
 import rasterio
 import rasterio.features
 from rasterio.enums import Resampling
-import shapely
 from shapely.geometry import shape, box
 from shapely.ops import transform
 
@@ -34,16 +32,19 @@ def get_image_data(
   resample: Resamples the image to given dimensions.
   """
     with rasterio.open(image_path) as ds:
-        transformer = partial(pyproj.transform,
-                              pyproj.Proj(28992),  # Assuming the study / crop area is in RD New
-                              pyproj.Proj(ds.crs.to_epsg() if ds.crs else 4326))  # The CRS as specified in the image
+        assert ds.crs  # Raise error if image does not have CRS
         print(f'Satellite image CRS: {ds.crs.to_epsg()}')
-        crop_shape = shapely.ops.transform(transformer, crop_shape)
+        transformer = pyproj.Transformer.from_crs(
+            pyproj.CRS('EPSG:28992'),  # Assuming the study / crop area is in RD New
+            pyproj.CRS(f'EPSG:{ds.crs.to_epsg()}'),   # The CRS as specified in the image
+            always_xy=True).transform
+        crop_shape = transform(transformer, crop_shape)
         bounding_box = box(*crop_shape.bounds)
 
         # Crop raster -- get bounding window of shape(s) in raster.
         window = rasterio.features.geometry_window(ds, [bounding_box])
         window_transform = ds.window_transform(window)
+
         # Either set a new shape for the data or use the window's shape.
         out_shape = (resample[0], resample[1]) if isinstance(resample, tuple) else (window.height, window.width)
 
