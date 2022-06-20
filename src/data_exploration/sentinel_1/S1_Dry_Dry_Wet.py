@@ -3,7 +3,7 @@ Title: Create composite RGB with (Dry, Dry, Wet) for (ponding) change visualizat
 Credit: Reverse-engineered code of Soria's s1_rgb_edited.py
 Date: 2022/06/20 | Author: Sotiris
 """
-# Imort Packages
+# Import Packages
 import numpy as np
 from osgeo import gdal
 from zipfile import ZipFile
@@ -21,14 +21,15 @@ def extract_tif_from_zip(zipfile_name, output_loc):
                 zipObj.extract(fileName, output_loc)
                 print('The TIFF file is extracted in temp_tiff')
 
-# Warp the tif files and safe to new tif
-def warp_tif_files(raster, output_raster):
-    output_r = 'src/data_exploration/sentinel_1/temp_tiff/vv_warp.tif'
-    output_raster_vh = "src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif"
-    # vv_warp = gdal.Warp(output_raster_vv, vv_backscatter, dstSRS="EPSG:4326")
-    vh_warp = gdal.Warp(output_raster_vh, vh_backscatter, dstSRS="EPSG:4326")
-    print('Files are warped')
-    return vh_warp # ,vv_warp
+### Create Warp function
+# def warp_tif_files(raster, output_raster):
+#     # Warp the tif files and safe to new tif
+#     output_r = 'src/data_exploration/sentinel_1/temp_tiff/vv_warp.tif'
+#     output_raster_vh = "src/data_exploration/sentinel_1/temp_tiff/vh_warp.tif"
+#     vv_warp = gdal.Warp(output_raster_vv, vv_backscatter, dstSRS="EPSG:4326")
+#     vh_warp = gdal.Warp(output_raster_vh, vh_backscatter, dstSRS="EPSG:4326")
+#     print('Files are warped')
+#     return vv_warp, vh_warp
 
 # Convert to dB
 def convert_to_decibel(vh_warp): # ,vv_warp
@@ -49,26 +50,25 @@ def stack_arrays(Dry, Dry, Wet):
     return s1_rgb
 
 
-
 def main():
     zip_name_dry = 'S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.zip'
     zip_name_wet = '...'
-    output_dry = 'src/data_exploration/sentinel_1/temp_tiff'
-    output_wet = '...'
+    output_dir = 'src/data_exploration/sentinel_1/temp_tiff'
 
     # Extract tif files from a zip file
-    extract_tif_from_zip(zip_name_dry, output_dry)  # Dry
-    extract_tif_from_zip(zip_name_wet, output_wet)  # Wet
+    extract_tif_from_zip(zip_name_dry, output_dir)  # Dry
+    extract_tif_from_zip(zip_name_wet, output_dir)  # Wet
 
     # Open with gdal
     # vv_backscatter = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vv-20210823t172521-20210823t172546-039360-04a618-001.tiff')
-    vh_backscatter = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff')
+    vh_backscatter_dry = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff')
+    vh_backscatter_wet = gdal.Open('src/data_exploration/sentinel_1/temp_tiff/S1A_IW_GRDH_1SDV_20210823T172521_20210823T172546_039360_04A618_4894.SAFE/measurement/s1a-iw-grd-vh-20210823t172521-20210823t172546-039360-04a618-002.tiff')
 
     # Warp to epsg 4326
     # vv_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff', vv_backscatter, dstSRS="EPSG:4326")
     # print('vv files are warped')
-    vh_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff', vh_backscatter, dstSRS="EPSG:4326") # Dry
-    vh_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff', vh_backscatter, dstSRS="EPSG:4326") # Wet
+    vh_warped_dry = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp_dry.tiff', vh_backscatter_dry, dstSRS="EPSG:4326") # Dry
+    vh_warped_wet = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp_wet.tiff', vh_backscatter_wet, dstSRS="EPSG:4326") # Wet
     print('vh files are warped')
 
     # get study area
@@ -76,21 +76,19 @@ def main():
 
     # get image data from warped tif files
     # vv = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff", study_area)
-    vh = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff", study_area)
+    vh_dry = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp_dry.tiff", study_area) # Dry
+    vh_wet = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp_wet.tiff", study_area) # Wet
     print('Image data study area acquired')
 
-    # convert arrays to decibels
-    vh_db = convert_to_decibel(vh) # Dry
-    vh_db = convert_to_decibel(vh) # Wet
-
-
-
-    vh_db_norm = min_max_norm(vh_db) # Dry
-    vh_db_norm = min_max_norm(vh_db) # Wet
+    # convert arrays to decibels and then normalize
+    vh_db_dry = convert_to_decibel(vh_dry) # Dry
+    vh_db_wet = convert_to_decibel(vh_wet) # Wet
+    vh_db_norm_dry = min_max_norm(vh_db_dry) # Dry
+    vh_db_norm_wet = min_max_norm(vh_db_wet) # Wet
     print('Normalise the three bands')
 
-    # stack VV, VH, RATIO becomes a ndarray
-    s1_rgb = stack_arrays(Dry, Dry, Wet)
+    # stack VH, VH, Dry becomes a ndarray
+    s1_rgb = stack_arrays(vh_db_norm_dry, vh_db_norm_dry, vh_db_norm_wet) # (Dry, Dry, Wet)
     show(s1_rgb)
 
 
