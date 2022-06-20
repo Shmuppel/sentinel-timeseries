@@ -6,6 +6,8 @@ Date: 2022/06/20 | Author: Sotiris
 # Import Packages
 import os
 import numpy as np
+import rasterio
+from PIL import Image
 from matplotlib import pyplot as plt
 from osgeo import gdal
 from zipfile import ZipFile
@@ -93,9 +95,8 @@ def main():
     # stack VH, VH, Dry becomes a ndarray
     s1_rgb = stack_arrays(vh_db_norm_dry, vh_db_norm_wet) # (Dry, Dry, Wet)
     show(s1_rgb)
-    plt.savefig('test.png', dpi=300)
-
-
+    with rasterio.open('Image.tif', 'w', driver='GTiff', width=1080, height=720, count=3, dtype=s1_rgb.dtype) as tile:
+        tile.write(s1_rgb)
 
 os.chdir('C:\Projects\pooling-detection')
 if __name__ == '__main__':
