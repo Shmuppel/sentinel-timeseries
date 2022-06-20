@@ -18,9 +18,9 @@ def calculate_indices():
     ndwi_mcfeeters = calculate_normalized_index(green_array, nir_array)
     mndwi_xu = calculate_normalized_index(green_array, swir_array)
 
-    # show(ndwi_gao, title='NDWI GAO', cmap='gist_ncar')
-    # show(ndwi_mcfeeters, title='NDWI McFeeters', cmap='gist_ncar')
-    # show(mndwi_xu, title='MNDWI', cmap='gist_ncar')
+    show(ndwi_gao, title='NDWI GAO', cmap='gist_ncar')
+    show(ndwi_mcfeeters, title='NDWI McFeeters', cmap='gist_ncar')
+    show(mndwi_xu, title='MNDWI', cmap='gist_ncar')
 
     return ndwi_gao, ndwi_mcfeeters, mndwi_xu, geometry_transform
 
