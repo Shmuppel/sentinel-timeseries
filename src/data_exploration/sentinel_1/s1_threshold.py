@@ -83,11 +83,11 @@ parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
 S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH,
                                                                                   S1A_20210619_VH,
                                                                                   S1A_20211022_VH)
-S1A_20200218_VH_crop = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
+S1A_20200218_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
 S1A_20200218_VH_db = convert_to_decibel(S1A_20200218_VH_crop)
-S1A_20210619_VH_crop = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
+S1A_20210619_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
 S1A_20210619_VH_db = convert_to_decibel(S1A_20210619_VH_crop)
-S1A_20211022_VH_crop = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
+S1A_20211022_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
 S1A_20211022_VH_db = convert_to_decibel(S1A_20211022_VH_crop)
 
 #           1. Creating B-Box
