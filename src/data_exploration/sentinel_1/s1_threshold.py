@@ -11,7 +11,7 @@ Title: Calculate threshold (dB) based classification of pooling
 """
 
 #           Import packages
-import os, rasterio, numpy, fiona, statistics
+import os
 import numpy as np
 import geopandas as gpd
 from osgeo import gdal
@@ -26,8 +26,8 @@ os.chdir(r'C:\Projects\pooling-detection')
 def extract_tif_from_zip(zipfile_name, output_loc):
     # Extract all the tiff files from a specified zip folder
     with ZipFile(zipfile_name, 'r') as zipObj:
-        listOfFileNames = zipObj.namelist()
-        for fileName in listOfFileNames:
+        list_of_file_names = zipObj.namelist()
+        for fileName in list_of_file_names:
             if fileName.endswith('.tiff'):
                 # Extract a single file from zip
                 zipObj.extract(fileName, output_loc)
@@ -80,35 +80,65 @@ aoi = get_study_area("resources/study_area/Polygon.geojson")  # With function fr
 parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
 # %%
 #                           Pre-Process
-S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH,
-                                                                                  S1A_20210619_VH,
+S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH, S1A_20210619_VH,
                                                                                   S1A_20211022_VH)
-S1A_20200218_VH_crop, s1_geometry = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
+S1A_20200218_VH_crop, geometry_1 = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
 S1A_20200218_VH_db = convert_to_decibel(S1A_20200218_VH_crop)
-masked_band1 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 1,2,3
+masked_band1 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 1
 S1A_20200218_VH_db = masked_band1.filled()
-
-S1A_20210619_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
+S1A_20210619_VH_crop, geometry_2 = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
 S1A_20210619_VH_db = convert_to_decibel(S1A_20210619_VH_crop)
-S1A_20211022_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
+masked_band2 = np.ma.array(S1A_20210619_VH_db, mask=S1A_20210619_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 2
+S1A_20210619_VH_db = masked_band2.filled()
+S1A_20211022_VH_crop, geometry_3 = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
 S1A_20211022_VH_db = convert_to_decibel(S1A_20211022_VH_crop)
-# %%
-#           1. Creating B-Box
-bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]  # 2019-06-17  2019-06-22  2020-03-26  2021-10-24
+masked_band3 = np.ma.array(S1A_20211022_VH_db, mask=S1A_20211022_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 3
+S1A_20211022_VH_db = masked_band3.filled()
 
+#           1. Creating B-Box
+# S2 Dates 2019-06-17, 2019-06-22, 2020-03-26, 2021-10-24
+bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
+
+# %%
 #           2. Zonal Statistics /rasterstats/
 # for loop
-bbox_stats = zonal_stats(bbox,
-                        S1A_20200218_VH_db,
-                        stats="count min median mean max std",
-                        affine=s1_geometry,
-                        nodata=-999.)
+stats_20200218 = zonal_stats(bbox, S1A_20200218_VH_db,
+                             stats="count min median mean max std",
+                             affine=geometry_1,
+                             nodata=-999.)
 
+stats_20210619 = zonal_stats(bbox, S1A_20200218_VH_db,
+                             stats="count min median mean max std",
+                             affine=geometry_1,
+                             nodata=-999.)
+
+stats_20211022 = zonal_stats(bbox, S1A_20200218_VH_db,
+                             stats="count min median mean max std",
+                             affine=geometry_1,
+                             nodata=-999.)
 
 # %%
 #           3. Calculate Averages
-averages = statistics.mean(var1, var2, var3)
+min1 = 0. ; max1 = 0. ; mean = 0. ; count = 0. ; std = 0. ; median = 0.
 
-#           3.1 Export results
-# ??wright txt file??
+for elem in range(len(stats_20200218)):
+    for key in stats_20200218[elem]:
+        if key == 'min':
+            min1 += stats_20200218[elem]['min']
+        elif key == 'max':
+            max1 += stats_20200218[elem]['max']
+        elif key == 'mean':
+            mean += stats_20200218[elem]['mean']
+        elif key == 'count':
+            count += stats_20200218[elem]['count']
+        elif key == 'std':
+            std += stats_20200218[elem]['std']
+        elif key == 'median':
+            median += stats_20200218[elem]['median']
 
+min1 = round(min1 / 4., 4) ; print('Min: ', min1)
+max1 = round(max1 / 4., 4) ; print('Max: ', max1)
+mean = round(mean / 4., 4) ; print('Mean: ', mean)
+count = round(count / 4., 4) ; print('Count: ', count)
+std = round(std / 4., 4) ; print('std: ', std)
+median = round(median / 4., 4) ; print('Median: ', median)
