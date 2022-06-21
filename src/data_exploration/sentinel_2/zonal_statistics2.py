@@ -12,11 +12,11 @@ import pandas as pd
 #import shapefile
 
 #load parcels
-parcelpath = r"C:\Projects\pooling-detection\resources\study_area\BRP_AOI_RDNew.geojson"
+parcelpath = "resources/study_area/BRP_AOI_RDNew.geojson"
 #parcelsall = get_study_area(parcelpath)
 parcelsall = get_parcels(parcelpath)
-#parcelsall = gpd.read_file(parcelpath)
-
+geoparcels = gpd.read_file(parcelpath)
+geomparcels = geoparcels['geometry']
 # Polygon into geojson
 transformer = pyproj.Transformer.from_crs(
     pyproj.CRS('EPSG:28992'),  # Assuming the study / crop area is in RD New
@@ -44,4 +44,21 @@ gao_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parc
 print(gao_stats)
 #show(ndwi_mcfeeters, title='NDWI mcfeeters', cmap='gist_ncar')
 
+#geopandas dataframe
 
+counts = [stats['count'] for stats in gao_stats]
+
+geoparcels['stats'] = counts
+
+geoparcels.plot(column='stats')
+
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(1, 1)
+
+geoparcels.plot(column='stats',
+           ax=ax,
+           legend=True,
+           legend_kwds={'label': "count per parcel",
+                        'orientation': "horizontal"})
+geoparcels.plot.area(column='stats')
