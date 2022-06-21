@@ -78,28 +78,31 @@ S1A_20211022_VH = gdal.Open('src/data_exploration/sentinel_1/temp_tiff'
 # Vectors
 aoi = get_study_area("resources/study_area/Polygon.geojson")  # With function from util.py
 parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
-
+# %%
 #                           Pre-Process
 S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH,
                                                                                   S1A_20210619_VH,
                                                                                   S1A_20211022_VH)
-S1A_20200218_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
+S1A_20200218_VH_crop, s1_geometry = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
 S1A_20200218_VH_db = convert_to_decibel(S1A_20200218_VH_crop)
+masked_band1 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 1,2,3
+S1A_20200218_VH_db = masked_band1.filled()
+
 S1A_20210619_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
 S1A_20210619_VH_db = convert_to_decibel(S1A_20210619_VH_crop)
 S1A_20211022_VH_crop, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
 S1A_20211022_VH_db = convert_to_decibel(S1A_20211022_VH_crop)
-
-#           1. Creating B-Box
-bb_1 = parcels[parcels.OBJECTID_1 == 1079]  # 2019-06-17
-bb_2 = parcels[parcels.OBJECTID_1 == 562]  # 2019-06-22
-bb_3 = parcels[parcels.OBJECTID_1 == 121]  # 2020-03-26
-bb_4 = parcels[parcels.OBJECTID_1 == 1037]  # 2021-10-24
-
 # %%
+#           1. Creating B-Box
+bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]  # 2019-06-17  2019-06-22  2020-03-26  2021-10-24
+
 #           2. Zonal Statistics /rasterstats/
 # for loop
-bb1_stats = zonal_stats([bb_1, bb_2, bb_3, bb_4], S1A_20200218_VH_db, stats="count min median mean max std")
+bbox_stats = zonal_stats(bbox,
+                        S1A_20200218_VH_db,
+                        stats="count min median mean max std",
+                        affine=s1_geometry,
+                        nodata=-999.)
 
 
 # %%
@@ -108,3 +111,4 @@ averages = statistics.mean(var1, var2, var3)
 
 #           3.1 Export results
 # ??wright txt file??
+
