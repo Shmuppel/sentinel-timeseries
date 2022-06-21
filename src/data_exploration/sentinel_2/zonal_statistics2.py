@@ -44,21 +44,11 @@ gao_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parc
 print(gao_stats)
 #show(ndwi_mcfeeters, title='NDWI mcfeeters', cmap='gist_ncar')
 
-#geopandas dataframe
+#geopandas dataframe get count, min, max, mean
 
 counts = [stats['count'] for stats in gao_stats]
+geoparcels['counts'] = counts
 
-geoparcels['stats'] = counts
 
-geoparcels.plot(column='stats')
-
-import matplotlib.pyplot as plt
-
-fig, ax = plt.subplots(1, 1)
-
-geoparcels.plot(column='stats',
-           ax=ax,
-           legend=True,
-           legend_kwds={'label': "count per parcel",
-                        'orientation': "horizontal"})
-geoparcels.plot.area(column='stats')
+geoparcels.plot(column='counts', legend=True)
+plt.show()
