@@ -21,6 +21,12 @@ def get_study_area(file_path: str):
     return aoi_shape
 
 
+def get_parcels(file_path: str):
+    with open(file_path, 'r') as f:
+        parcel_json = json.load(f)
+    return parcel_json
+
+
 def get_image_data(
         image_path: str,
         crop_shape,

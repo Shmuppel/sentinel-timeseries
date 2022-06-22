@@ -1,22 +1,43 @@
 """
-Author: Sotiris Kechagias (MasterHydro)
-Title : This is Sentinel 1 image processing for calculating indexes in order to find out pooling with radar
-Starting Date : 2022/06/13 (Monday)
+Date: Thursday 2022/06/16
+Authors: Soria & Sotiris
+Title: Calculate threshold (dB) based classification of pooling
 """
 
-#                       TO DO
-# 1. Find Sentinel-2 cloud free images with clear pooling.
-# 2. Clip the water pixel with a `Water Index(es)`.
-# 3. Check the same areas/pixes for the dB values.
-# 4. Use an average calculation to create `water pixel index` in
-#    the following format: min <= value <= max
+#           INSTRUCTIONS
+# 1. Select a b-box (potential flooded parcel) [e.g. 10 parcels]
+# 2. Find the min/max/stdv
+# 3. Do that for at least 3 different images
+# 4. Come up with threshold
+
+#           Import packages
+import rasterio, numpy, fiona, statistics
+import geopandas as gpd
+from osgeo import gdal
+from rasterstats import zonal_stats
+
+# import matplotlib.pyplot as plt
+# import rasterio.plot as rplt
+
+#           Import Data
+S1A_20200218_VV = rasterio.open("...")
+S1A_20210619_VV = "..."
+S1A_20211022_VV = "..."
+aoi = gpd.read_file("...")
+
+#           1. Creating B-Box | From parcels / from geometry bbox / from qgis->geojson
+# B-Box 1
+
+# B-Box 2
+
+# B-Box 3
 
 
-#               INSTRUCTIONS / PARTS
-# Import Sentinel-2 pooling pixels/images/raster
+#           2. Zonal Statistics /rasterstats/
+zona_list_1 = zonal_stats("...shp...", "...tif...", stats="count min median mean max std")
 
-# Select the equivalents for Sentinel-1
+#           3. Calculate Averages
+averages = statistics.mean(var1, var2, var3)
 
-# Create a list/table with min-max (dB)
-
-# Calculate and export the indexes
+#           3.1 Export results
+# ??wright txt file??
