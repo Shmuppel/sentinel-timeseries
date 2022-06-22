@@ -16,6 +16,7 @@ import numpy as np
 import geopandas as gpd
 from osgeo import gdal
 from rasterstats import zonal_stats
+from rasterio.plot import show
 from zipfile import ZipFile
 from src.util import get_study_area, get_image_data
 
@@ -85,15 +86,15 @@ S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_file
 S1A_20200218_VH_crop, geometry_1 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
 S1A_20200218_VH_db = convert_to_decibel(S1A_20200218_VH_crop)
 masked_band1 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 1
-S1A_20200218_VH_db = masked_band1.filled()
+S1A_20200218_VH_db_m = masked_band1.filled()
 S1A_20210619_VH_crop, geometry_2 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
 S1A_20210619_VH_db = convert_to_decibel(S1A_20210619_VH_crop)
 masked_band2 = np.ma.array(S1A_20210619_VH_db, mask=S1A_20210619_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 2
-S1A_20210619_VH_db = masked_band2.filled()
+S1A_20210619_VH_db_m = masked_band2.filled()
 S1A_20211022_VH_crop, geometry_3 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
 S1A_20211022_VH_db = convert_to_decibel(S1A_20211022_VH_crop)
 masked_band3 = np.ma.array(S1A_20211022_VH_db, mask=S1A_20211022_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 3
-S1A_20211022_VH_db = masked_band3.filled()
+S1A_20211022_VH_db_m = masked_band3.filled()
 
 #           1. Creating B-Box
 # S2 Dates 2019-06-17, 2019-06-22, 2020-03-26, 2021-10-24
@@ -102,19 +103,19 @@ bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
 # %%
 #           2. Zonal Statistics /rasterstats/
 # for loop
-stats_20200218 = zonal_stats(bbox, S1A_20200218_VH_db,
+stats_20200218 = zonal_stats(bbox, S1A_20200218_VH_db_m,
                              stats="count min median mean max std",
                              affine=geometry_1,
                              nodata=-999.)
 
-stats_20210619 = zonal_stats(bbox, S1A_20200218_VH_db,
+stats_20210619 = zonal_stats(bbox, S1A_20210619_VH_db_m,
                              stats="count min median mean max std",
-                             affine=geometry_1,
+                             affine=geometry_2,
                              nodata=-999.)
 
-stats_20211022 = zonal_stats(bbox, S1A_20200218_VH_db,
+stats_20211022 = zonal_stats(bbox, S1A_20211022_VH_db_m,
                              stats="count min median mean max std",
-                             affine=geometry_1,
+                             affine=geometry_3,
                              nodata=-999.)
 
 # %%
@@ -142,3 +143,28 @@ mean = round(mean / 4., 4) ; print('Mean: ', mean)
 count = round(count / 4., 4) ; print('Count: ', count)
 std = round(std / 4., 4) ; print('Std: ', std)
 median = round(median / 4., 4) ; print('Median: ', median)
+
+# %%
+#                   4. VISUALISE
+pond20200218 = np.logical_and(S1A_20200218_VH_db >= 1.4712, S1A_20200218_VH_db <= 2.1641) ; show(pond20200218)
+pond20210619 = np.logical_and(S1A_20210619_VH_db >= 1.4712, S1A_20210619_VH_db <= 2.1641) ; show(pond20210619)
+pond20211022 = np.logical_and(S1A_20211022_VH_db >= 1.4712, S1A_20211022_VH_db <= 2.1641) ; show(pond20211022)
+
+# mask parcels
+
+# %%
+
+full_stats_20200218 = zonal_stats(parcels, S1A_20200218_VH_db_m,
+                                  stats="count min median mean max std",
+                                  affine=geometry_1,
+                                  nodata=-999.) ; print('full_stats_20200218 Done')
+
+full_stats_20210619 = zonal_stats(parcels, S1A_20210619_VH_db_m,
+                                  stats="count min median mean max std",
+                                  affine=geometry_2,
+                                  nodata=-999.) ; print('full_stats_20210619 Done')
+
+full_stats_20211022 = zonal_stats(parcels, S1A_20211022_VH_db_m,
+                                  stats="count min median mean max std",
+                                  affine=geometry_3,
+                                  nodata=-999.) ; print('full_stats_20211022 Done')
