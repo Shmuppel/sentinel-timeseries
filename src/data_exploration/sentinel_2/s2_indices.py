@@ -5,13 +5,13 @@ from src.util import *
 def calculate_indices():
     aoi_json = get_study_area('resources/study_area/Polygon.geojson')
     # load green band
-    green_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B03.jp2"
+    green_image = r"C:\Projects\pooling-detection\resources\images\T31UFU_20210823T105031_B03.jp2"
     green_array, geometry_transform = get_image_data(green_image, aoi_json)
     # # load NIR Band
-    nir_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B08.jp2"
+    nir_image = r"C:\Projects\pooling-detection\resources\images\T31UFU_20210823T105031_B08.jp2"
     nir_array,_ = get_image_data(nir_image, aoi_json)
     # load SWIR Data
-    swir_image = "resources/images/IMG_DATA/T31UFU_20210823T105031_B11.jp2"
+    swir_image = r"C:\Projects\pooling-detection\resources\images\T31UFU_20210823T105031_B11.jp2"
     swir_array,_ = get_image_data(swir_image, aoi_json, resample=green_array.shape)
 
     ndwi_gao = calculate_normalized_index(nir_array, swir_array)
