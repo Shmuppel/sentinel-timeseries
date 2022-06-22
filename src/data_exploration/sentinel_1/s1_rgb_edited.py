@@ -64,7 +64,7 @@ def stack_arrays(vv, vh, ratio):
     return s1_rgb
 
 
-def main(zipfile):
+def get_s1_rgb(zipfile):
     """This function calls on the functions above to extract vv and vh tiff files from a .zip,
      to convert them to dB, calculate the ratio, normalise and stack them, to be able to plot
      them as an RGB image."""
@@ -75,17 +75,17 @@ def main(zipfile):
     files = extract_tif_from_zip(zip_name, output_folder)
 
     #Warp the files to EPSG:4326
-    vh_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp1.tiff', files['vh'], dstSRS="EPSG:4326")
+    vh_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff', files['vh'], dstSRS="EPSG:4326")
     print('vh files are warped')
-    vv_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vv_warp1.tiff', files['vv'], dstSRS="EPSG:4326")
+    vv_warped = gdal.Warp('src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff', files['vv'], dstSRS="EPSG:4326")
     print('vv files are warped')
 
     #Get the study area
     study_area = get_study_area("resources/study_area/Polygon.geojson")
 
     #Get the data of only the study area from the warped tiff files
-    vv, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp1.tiff", study_area)
-    vh, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp1.tiff", study_area)
+    vv, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp.tiff", study_area)
+    vh, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp.tiff", study_area)
     print('Image data study area acquired')
 
     #Convert backscatter to decibels
