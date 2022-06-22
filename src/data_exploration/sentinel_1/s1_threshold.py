@@ -168,3 +168,4 @@ full_stats_20211022 = zonal_stats(parcels, S1A_20211022_VH_db_m,
                                   stats="count min median mean max std",
                                   affine=geometry_3,
                                   nodata=-999.) ; print('full_stats_20211022 Done')
+show(full_stats_20211022)
