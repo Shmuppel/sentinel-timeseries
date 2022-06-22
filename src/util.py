@@ -11,6 +11,7 @@ import shapely
 import geopandas as gpd
 from rasterstats import zonal_stats
 
+
 def calculate_normalized_index(band1, band2):
     """ Returns a normalized index from two bands. """
     return (band1 - band2) / (band1 + band2)
@@ -45,7 +46,7 @@ def get_image_data(
         print(f'Satellite image CRS: {ds.crs.to_epsg()}')
         transformer = pyproj.Transformer.from_crs(
             pyproj.CRS('EPSG:28992'),  # Assuming the study / crop area is in RD New
-            pyproj.CRS(f'EPSG:{ds.crs.to_epsg()}'),   # The CRS as specified in the image
+            pyproj.CRS(f'EPSG:{ds.crs.to_epsg()}'),  # The CRS as specified in the image
             always_xy=True).transform
         crop_shape = transform(transformer, crop_shape)
         bounding_box = box(*crop_shape.bounds)
@@ -72,17 +73,19 @@ def get_image_data(
 
         return band_masked, geometry_transform
 
-def s1_stats(index_stat,geodataframe,indexname):
+
+def s1_stats(index_stat, geodataframe, indexname):
     # count
     counts = [stats['count'] for stats in index_stat]
-    geodataframe['counts_'+ indexname] = counts
+    geodataframe['counts_' + indexname] = counts
     return geodataframe
 
-def stats_to_gdf(index_stat,geodataframe,indexname):
+
+def stats_to_gdf(index_stat, geodataframe, indexname):
     # Adding statistical data: count, mean, max and percentile, to a geodataframe
     # count
     counts = [stats['count'] for stats in index_stat]
-    geodataframe['counts_'+ indexname] = counts
+    geodataframe['counts_' + indexname] = counts
     # mean
     mean = [stats['mean'] for stats in index_stat]
     geodataframe['mean_' + indexname] = mean
@@ -95,9 +98,10 @@ def stats_to_gdf(index_stat,geodataframe,indexname):
 
     return geodataframe
 
-#function that loads the file of the idices based on a given path
-def load_parcels (file_path):
-    #create parcelpath
+
+# function that loads the file of the idices based on a given path
+def load_parcels(file_path):
+    # create parcelpath
 
     parcelpath = file_path
     parcelsall = get_parcels(parcelpath)
@@ -113,45 +117,47 @@ def load_parcels (file_path):
 
     return new_parcels, geoparcels
 
-#Function that calculates the zonalstatistics of the indices
-def zonals (indice, geometry_transform, new_parcels):
-    #Make an array of the indices
+
+# Function that calculates the zonalstatistics of the indices
+def zonals(indice, geometry_transform, new_parcels):
+    # Make an array of the indices
 
     masked_band = np.ma.array(indice, mask=(indice.mask), dtype=np.float32, fill_value=-999)
     masked_filled = masked_band.filled()
 
-    #Zonal stats of the indices
+    # Zonal stats of the indices
     stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled,
-                            affine=geometry_transform, nodata=-999, stats=['count', 'max', 'mean', 'percentile_95'])
+                        affine=geometry_transform, nodata=-999, stats=['count', 'max', 'mean', 'percentile_95'])
     return stats
 
-#A Function that plots the zonal stats
+
+# A Function that plots the zonal stats
 def plot_all_indices(data, count, mean, max, percentile, name):
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    data.plot(column=count, legend=True, cmap='Spectral',ax=ax )
+    data.plot(column=count, legend=True, cmap='Spectral', ax=ax)
     ax.set_title(name + count, fontsize=30)
     plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    data.plot(column=mean, legend=True, cmap='Spectral',ax=ax)
+    data.plot(column=mean, legend=True, cmap='Spectral', ax=ax)
     ax.set_title(name + mean, fontsize=30)
     plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    data.plot(column=max, legend=True, cmap='Spectral',ax=ax)
+    data.plot(column=max, legend=True, cmap='Spectral', ax=ax)
     ax.set_title(name + max, fontsize=30)
     plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    data.plot(column=percentile, legend=True, cmap='Spectral',ax=ax)
+    data.plot(column=percentile, legend=True, cmap='Spectral', ax=ax)
     ax.set_title(name + percentile, fontsize=30)
     plt.show()
+
 
 def plot1_indices(data, thing, name):
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    data.plot(column=thing, legend=True, cmap='Spectral',ax=ax )
+    data.plot(column=thing, legend=True, cmap='Spectral', ax=ax)
     ax.set_title(name + thing, fontsize=30)
     plt.show()
-

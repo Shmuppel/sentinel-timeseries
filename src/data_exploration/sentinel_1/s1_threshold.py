@@ -1,28 +1,38 @@
 """
-Date: Thursday 2022/06/16
-Authors: Sotiris
 Title: Calculate threshold (dB) based classification of pooling
-=================================================================
-                        INSTRUCTIONS
-1. Select a b-box (potential flooded parcel) [4 parcels]
-2. Find the min/max/stdv
-3. Do that for 3 different images/time events
-4. Come up with threshold
+Date: Thursday 2022/06/16 | Authors: Sotiris
 """
 
-#           Import packages
+#                   Import packages
 import os
 import numpy as np
 import geopandas as gpd
 from osgeo import gdal
 from rasterstats import zonal_stats
-from rasterio.plot import show
 from zipfile import ZipFile
 from src.util import get_study_area, get_image_data, s1_stats, plot1_indices
-import matplotlib.pyplot as plt
 
-#           Sed directory
+# Sed directory
 os.chdir(r'C:\Projects\pooling-detection')
+
+
+# Create functions
+def pond_mask(image, pond):
+    masked_band = np.ma.array(image,
+                              mask=(pond | image.mask),
+                              dtype=np.float32, fill_value=-999.)
+    pond_m = masked_band.filled()
+    return pond_m
+
+
+def stats_calc(image, geometry, parcels):
+    stats = zonal_stats(parcels,
+                        image,
+                        stats="count min median mean max std",
+                        affine=geometry,
+                        nodata=-999.)
+    print('Done')
+    return stats
 
 
 def extract_tif_from_zip(zipfile_name, output_loc):
@@ -56,73 +66,63 @@ def convert_to_decibel(vh_warp):
     return vh_db
 
 
-#           Import Data
-# Filenames
-image_1 = './resources/S1A_IW_GRDH_1SDV_20200218T172507_20200218T172532_031310_039A30_3336.zip'
-image_2 = './resources/S1A_IW_GRDH_1SDV_20210619T171711_20210619T171736_038412_048863_432B.zip'
-image_3 = './resources/S1A_IW_GRDH_1SDV_20211022T172522_20211022T172547_040235_04C439_981A.zip'
+# %%                Import Filenames/Paths
+image_1, image_2, image_3 = './resources/S1A_IW_GRDH_1SDV_20200218T172507_20200218T172532_031310_039A30_3336.zip', \
+                            './resources/S1A_IW_GRDH_1SDV_20210619T171711_20210619T171736_038412_048863_432B.zip', \
+                            './resources/S1A_IW_GRDH_1SDV_20211022T172522_20211022T172547_040235_04C439_981A.zip '
 output_dir = './src/data_exploration/sentinel_1/temp_tiff'
-
-# Extract tif files from a zip file
+#                   Extract tif files from a zip file
 extract_tif_from_zip(image_1, output_dir)
 extract_tif_from_zip(image_2, output_dir)
 extract_tif_from_zip(image_3, output_dir)
-# Rasters
+#                   Import Images
 S1A_20200218_VH = gdal.Open('./src/data_exploration/sentinel_1/temp_tiff'
                             '/S1A_IW_GRDH_1SDV_20200218T172507_20200218T172532_031310_039A30_3336.SAFE/measurement'
-                            '/s1a-iw-grd-vh-20200218t172507-20200218t172532-031310-039a30-002.tiff')
+                            '/s1a-iw-grd-vh-20200218t172507-20200218t172532-031310-039a30-002.tiff')  # 1st Image
 S1A_20210619_VH = gdal.Open('./src/data_exploration/sentinel_1/temp_tiff'
                             '/S1A_IW_GRDH_1SDV_20210619T171711_20210619T171736_038412_048863_432B.SAFE/measurement'
-                            '/s1a-iw-grd-vh-20210619t171711-20210619t171736-038412-048863-002.tiff')
+                            '/s1a-iw-grd-vh-20210619t171711-20210619t171736-038412-048863-002.tiff')  # 2nd Image
 S1A_20211022_VH = gdal.Open('./src/data_exploration/sentinel_1/temp_tiff'
                             '/S1A_IW_GRDH_1SDV_20211022T172522_20211022T172547_040235_04C439_981A.SAFE/measurement'
-                            '/s1a-iw-grd-vh-20211022t172522-20211022t172547-040235-04c439-002.tiff')
-# Vectors
-aoi = get_study_area("./resources/study_area/Polygon.geojson")  # With function from util.py
+                            '/s1a-iw-grd-vh-20211022t172522-20211022t172547-040235-04c439-002.tiff')  # 3rd Image
+#                   Import Vectors
+aoi = get_study_area("./resources/study_area/Polygon.geojson")
 parcels = gpd.read_file("./resources/study_area/AOI_BRP_WGS84.geojson")
-# %%
-#                           Pre-Process
-S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH, S1A_20210619_VH,
+# %%                0. Pre-Process
+# Warp images to CRS
+S1A_20200218_VH_warp, S1A_20210619_VH_warp, S1A_20211022_VH_warp = warp_tif_files(S1A_20200218_VH,
+                                                                                  S1A_20210619_VH,
                                                                                   S1A_20211022_VH)
 S1A_20200218_VH_crop, geometry_1 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im1_warp.tif", aoi)
-S1A_20200218_VH_db = convert_to_decibel(S1A_20200218_VH_crop)
-masked_band1 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 1
-S1A_20200218_VH_db_m = masked_band1.filled()
 S1A_20210619_VH_crop, geometry_2 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im2_warp.tif", aoi)
-S1A_20210619_VH_db = convert_to_decibel(S1A_20210619_VH_crop)
-masked_band2 = np.ma.array(S1A_20210619_VH_db, mask=S1A_20210619_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 2
-S1A_20210619_VH_db_m = masked_band2.filled()
 S1A_20211022_VH_crop, geometry_3 = get_image_data("./src/data_exploration/sentinel_1/temp_tiff/im3_warp.tif", aoi)
-S1A_20211022_VH_db = convert_to_decibel(S1A_20211022_VH_crop)
-masked_band3 = np.ma.array(S1A_20211022_VH_db, mask=S1A_20211022_VH_db.mask, dtype=np.float32, fill_value=-999.)  # 3
-S1A_20211022_VH_db_m = masked_band3.filled()
+# Convert to dB
+S1A_20200218_VH_db, S1A_20210619_VH_db, S1A_20211022_VH_db = convert_to_decibel(S1A_20200218_VH_crop), \
+                                                             convert_to_decibel(S1A_20210619_VH_crop), \
+                                                             convert_to_decibel(S1A_20211022_VH_crop)
+# Mask non-values -999.
+masked_band1, masked_band2, masked_band3 = np.ma.array(S1A_20200218_VH_db, mask=S1A_20200218_VH_db.mask,
+                                                       dtype=np.float32, fill_value=-999.), \
+                                           np.ma.array(S1A_20210619_VH_db, mask=S1A_20210619_VH_db.mask,
+                                                       dtype=np.float32, fill_value=-999.), \
+                                           np.ma.array(S1A_20211022_VH_db, mask=S1A_20211022_VH_db.mask,
+                                                       dtype=np.float32, fill_value=-999.)
+# Create masks
+S1A_20200218_VH_db_m, S1A_20210619_VH_db_m, S1A_20211022_VH_db_m = masked_band1.filled(), \
+                                                                   masked_band2.filled(), \
+                                                                   masked_band3.filled()
 
-#           1. Creating B-Box
-# S2 Dates 2019-06-17, 2019-06-22, 2020-03-26, 2021-10-24
+# %%                 1. Creating B-Box
+# S2 Dates: 2019-06-17, 2019-06-22, 2020-03-26, 2021-10-24
 bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
 
-# %%
-#           2. Zonal Statistics /rasterstats/
-# for loop
-stats_20200218 = zonal_stats(bbox, S1A_20200218_VH_db_m,
-                             stats="count min median mean max std",
-                             affine=geometry_1,
-                             nodata=-999.)
+#                   2. Zonal Statistics
+stats_20200218 = stats_calc(S1A_20200218_VH_db_m, geometry_1, bbox)
+stats_20210619 = stats_calc(S1A_20210619_VH_db_m, geometry_2, bbox)
+stats_20211022 = stats_calc(S1A_20211022_VH_db_m, geometry_3, bbox)
 
-stats_20210619 = zonal_stats(bbox, S1A_20210619_VH_db_m,
-                             stats="count min median mean max std",
-                             affine=geometry_2,
-                             nodata=-999.)
-
-stats_20211022 = zonal_stats(bbox, S1A_20211022_VH_db_m,
-                             stats="count min median mean max std",
-                             affine=geometry_3,
-                             nodata=-999.)
-
-# %%
-#           3. Calculate Averages
-min1 = 0. ; max1 = 0. ; mean = 0. ; count = 0. ; std = 0. ; median = 0.
-
+# %%                3. Calculate Averages
+min1, max1, mean, count, std, median = 0., 0., 0., 0., 0., 0.
 for elem in range(len(stats_20200218)):
     for key in stats_20200218[elem]:
         if key == 'min':
@@ -137,74 +137,28 @@ for elem in range(len(stats_20200218)):
             std += stats_20200218[elem]['std']
         elif key == 'median':
             median += stats_20200218[elem]['median']
+min1, max1, mean, count, std, median = round(min1 / 4., 4), round(max1 / 4., 4), round(mean / 4., 4), \
+                                       round(count / 4., 4), round(std / 4., 4), round(median / 4., 4)
+print('Min: ', min1, 'Max: ', max1, 'Mean: ', mean, '\nCount: ', count, 'Std: ', std, 'Median: ', median)
 
-min1 = round(min1 / 4., 4) ; print('Min: ', min1)
-max1 = round(max1 / 4., 4) ; print('Max: ', max1)
-mean = round(mean / 4., 4) ; print('Mean: ', mean)
-count = round(count / 4., 4) ; print('Count: ', count)
-std = round(std / 4., 4) ; print('Std: ', std)
-median = round(median / 4., 4) ; print('Median: ', median)
-
-# %%
-#                   4. VISUALISE BASED ON THRESHOLDS
-pond20200218 = np.logical_and(S1A_20200218_VH_db >= 1.4712, S1A_20200218_VH_db <= 2.1641) ; show(pond20200218)
-pond20210619 = np.logical_and(S1A_20210619_VH_db >= 1.4712, S1A_20210619_VH_db <= 2.1641) ; show(pond20210619)
-pond20211022 = np.logical_and(S1A_20211022_VH_db >= 1.4712, S1A_20211022_VH_db <= 2.1641) ; show(pond20211022)
-# mask parcels
-masked_band1 = np.ma.array(S1A_20200218_VH_db,
-                           mask=(pond20200218 | S1A_20200218_VH_db.mask),
-                           dtype=np.float32, fill_value=-999.)
-pond20200218_m = masked_band1.filled()
-masked_band2 = np.ma.array(S1A_20210619_VH_db,
-                           mask=(pond20210619 | S1A_20210619_VH_db.mask),
-                           dtype=np.float32, fill_value=-999.)
-pond20210619_m = masked_band2.filled()
-masked_band3 = np.ma.array(S1A_20211022_VH_db,
-                           mask=(pond20211022 | S1A_20211022_VH_db.mask),
-                           dtype=np.float32, fill_value=-999.)  # 3
-pond20211022_m = masked_band3.filled()
-
-# %%
-
-full_stats_20200218 = zonal_stats(parcels, S1A_20200218_VH_db_m,
-                                  stats="count min median mean max std",
-                                  affine=geometry_1,
-                                  nodata=-999.) ; print('full_stats_20200218 Done')
-
-full_stats_20210619 = zonal_stats(parcels, S1A_20210619_VH_db_m,
-                                  stats="count min median mean max std",
-                                  affine=geometry_2,
-                                  nodata=-999.) ; print('full_stats_20210619 Done')
-
-full_stats_20211022 = zonal_stats(parcels, pond20211022_m,
-                                  stats="count min median mean max std",
-                                  affine=geometry_3,
-                                  nodata=-999.) ; print('full_stats_20211022 Done')
-
-#%%
-
-a = s1_stats(full_stats_20200218, parcels, 'count')
-plot1_indices(a, 'count', 'full_stats_20200218')
-
-
-
-mean = [stats['count'] for stats in full_stats_20200218]
-parcels['count'] = mean
-fig, ax = plt.subplots(figsize=(12, 8))
-parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
-ax.set_title("full_stats_20200218" + ' count', fontsize=30)
-plt.show()
-
-mean = [stats['count'] for stats in full_stats_20210619]
-parcels['count'] = mean
-fig, ax = plt.subplots(figsize=(12, 8))
-parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
-ax.set_title("full_stats_20210619" + ' count', fontsize=30)
-plt.show()
-
-mean = [stats['count'] for stats in full_stats_20211022]
-parcels['count'] = mean
-fig, ax = plt.subplots(figsize=(12, 8))
-parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
-ax.set_title("full_stats_20211022" + ' count', fontsize=30)
-plt.show()
+# %%                4. VISUALISE BASED ON THRESHOLDS
+# Apply indices
+pond20200218, pond20210619, pond20211022 = np.logical_and(S1A_20200218_VH_db >= min1, S1A_20200218_VH_db <= max1), \
+                                           np.logical_and(S1A_20210619_VH_db >= min1, S1A_20210619_VH_db <= max1), \
+                                           np.logical_and(S1A_20211022_VH_db >= min1, S1A_20211022_VH_db <= max1)
+# Mask parcels based on indices
+pond20200218_m, pond20210619_m, pond20211022_m = pond_mask(S1A_20200218_VH_db, pond20200218), \
+                                                 pond_mask(S1A_20210619_VH_db, pond20210619), \
+                                                 pond_mask(S1A_20211022_VH_db, pond20211022)
+# Calculate the stats for all parcels
+full_stats_20200218, full_stats_20210619, full_stats_20211022 = stats_calc(pond20200218_m, geometry_1, parcels), \
+                                                                stats_calc(pond20210619_m, geometry_2, parcels), \
+                                                                stats_calc(pond20211022_m, geometry_3, parcels)
+# Calculate counts of count
+s1_stats(full_stats_20200218, parcels, 'count')
+s1_stats(full_stats_20210619, parcels, 'count')
+s1_stats(full_stats_20211022, parcels, 'count')
+# Plot the count of the poonding pixels
+plot1_indices(parcels, 'counts_count', 'full_stats_20200218 ')
+plot1_indices(parcels, 'counts_count', 'full_stats_20210619 ')
+plot1_indices(parcels, 'counts_count', 'full_stats_20211022 ')
