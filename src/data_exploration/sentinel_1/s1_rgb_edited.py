@@ -84,8 +84,8 @@ def main(zipfile):
     study_area = get_study_area("resources/study_area/Polygon.geojson")
 
     #Get the data of only the study area from the warped tiff files
-    vv, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp1.tiff", study_area)
-    vh, _ = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp1.tiff", study_area)
+    vv, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vv_warp1.tiff", study_area)
+    vh, geom_transform = get_image_data("src/data_exploration/sentinel_1/temp_tiff/vh_warp1.tiff", study_area)
     print('Image data study area acquired')
 
     #Convert backscatter to decibels
@@ -117,7 +117,7 @@ def main(zipfile):
 
     #Save the array stack and return the file name + extension
     np.save(output_name, s1_rgb)
-    return output_name + '.npy'
+    return output_name + '.npy', geom_transform
 
 
 if __name__ == '__main__':

@@ -4,7 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from src.data_exploration.sentinel_1.s1_rgb_edited import main
 from rasterio.plot import show
-from osgeo import gdal
+import geopandas as gpd
+from rasterstats import zonal_stats
 #os.chdir('C:\\Projects\\pooling-detection')
 
 # Get different files from API
@@ -42,5 +43,18 @@ for i in range(len(array_stack)):
     plt.show()
     show(array_stack[i])
 
-#Zonal statistics per parcel
+#### Zonal statistics per parcel
+#Read in parcels
+parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
+#Create a bounding box
+bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
 
+stats = []
+for key, value in rgbs.items():
+    raster = np.load(value[0])
+    for element in raster:
+        stats.append(zonal_stats(bbox,
+                                 element,
+                                 stats=['count', 'min', 'median', 'mean', 'max', 'std'],
+                                 affine=value[1],
+                                 nodata=-999.))
