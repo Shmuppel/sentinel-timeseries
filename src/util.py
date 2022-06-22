@@ -142,3 +142,10 @@ def plot_all_indices(data, count, mean, max, percentile, name):
     data.plot(column=percentile, legend=True, cmap='Spectral',ax=ax)
     ax.set_title(name + percentile, fontsize=30)
     plt.show()
+
+def plot1_indices(data, thing, name):
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    data.plot(column=thing, legend=True, cmap='Spectral',ax=ax )
+    ax.set_title(name + thing, fontsize=30)
+    plt.show()
