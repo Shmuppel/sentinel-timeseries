@@ -30,74 +30,124 @@ new_parcels = [transform(transformer, shape(parcel['geometry'])) for parcel in p
 #load indice maps
 ndwi_gao, ndwi_mcfeeters, mndwi_xu, geometry_transform = calculate_indices()
 
+###ZONAL STATS
+#Goastats
+masked_band_gao = np.ma.array(ndwi_gao, mask=(ndwi_gao.mask), dtype=np.float32, fill_value=-999)
+masked_filled_gao = masked_band_gao.filled()
 
-#do some calculations with zonal_stats for NDWI Gao index
-masked_band = np.ma.array(ndwi_gao, mask=(ndwi_gao.mask), dtype=np.float32, fill_value=-999)
-masked_filled = masked_band.filled()
+#Goa zonal stats
+gao_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled_gao, affine = geometry_transform, nodata = -999, stats=['count', 'max', 'mean','percentile_95'])
+###END GAO
 
-gao_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled, affine = geometry_transform, nodata = -999, stats='percentile_95')
+#mndwi_Xu calculations
+masked_band_xu = np.ma.array(mndwi_xu, mask=(mndwi_xu.mask), dtype=np.float32, fill_value=-999)
+masked_filled_xu = masked_band_xu.filled()
 
-print(gao_stats)
+#MNDWI zonalstats
+mndwi_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled_xu, affine = geometry_transform, nodata = -999, stats=['count', 'max', 'mean','percentile_95'])
+###END MNDWI
 
-fig, ax = plt.subplots(figsize = (12, 8))
-perc = [stats['percentile_95'] for stats in gao_stats]
-geoparcels['gao_percentile_95'] = perc
-geoparcels.plot(column='gao_percentile_95',ax=ax, cmap='Spectral', legend=True)
-ax.set_title("Gao - percentile_95", fontsize=30)
-plt.show()
+#ndwi_mcfeeters calculations
+masked_band_mcfeeters = np.ma.array(ndwi_mcfeeters, mask=(ndwi_mcfeeters.mask), dtype=np.float32, fill_value=-999)
+masked_filled_mcfeeters = masked_band_mcfeeters.filled()
 
-#do some calculations with zonal_stats for NDWI mcfeeters
-masked_band2 = np.ma.array(ndwi_mcfeeters, mask=(ndwi_mcfeeters.mask), dtype=np.float32, fill_value=-999)
-masked_filled2 = masked_band.filled()
+#ndwi zonalstats
+mcfeeters_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled_mcfeeters, affine = geometry_transform, nodata = -999, stats=['count', 'max', 'mean','percentile_95'])
+### END MCFEETERS
 
-mcfeeters_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled2, affine = geometry_transform, nodata = -999, stats='percentile_95')
 
-print(mcfeeters_stats)
 
-fig, ax = plt.subplots(figsize = (12, 8))
 
-percmcfeeters = [stats['percentile_95'] for stats in mcfeeters_stats]
-geoparcels['feeters_percentile_95'] = percmcfeeters
-geoparcels.plot(column='feeters_percentile_95',ax=ax, cmap='Spectral', legend=True)
-ax.set_title("McFeeters - percentile_95", fontsize=30)
-plt.show()
-#do some calculations with zonal_stats for NDWI mndwi Xu
-masked_band3 = np.ma.array(mndwi_xu, mask=(mndwi_xu.mask), dtype=np.float32, fill_value=-999)
-masked_filled3 = masked_band3.filled()
 
-mndwi_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled3, affine = geometry_transform, nodata = -999, stats='percentile_95')
+## GAO Stats adding
+counts = [stats['count'] for stats in gao_stats]
+geoparcels['counts_gao'] = counts
 
-print(mndwi_stats)
+mean = [stats['mean'] for stats in gao_stats]
+geoparcels['mean_gao'] = mean
 
-fig, ax = plt.subplots(figsize = (12, 8))
+rmax = [stats['max'] for stats in gao_stats]
+geoparcels['max_gao'] = rmax
 
-perc = [stats['percentile_95'] for stats in mndwi_stats]
-geoparcels['mndwi_percentile_95'] = perc
-geoparcels.plot(column='mndwi_percentile_95',ax=ax, cmap='Spectral', legend=True)
-ax.set_title("MNDWI, Xu - percentile_95", fontsize=30)
-plt.show()
+percentile = [stats['percentile_95'] for stats in gao_stats]
+geoparcels['percentile_gao'] = percentile
+
+#MNDWI Stats adding
+counts = [stats['count'] for stats in mndwi_stats]
+geoparcels['counts_mndwi'] = counts
+
+mean = [stats['mean'] for stats in mndwi_stats]
+geoparcels['mean_mndwi'] = mean
+
+rmax = [stats['max'] for stats in mndwi_stats]
+geoparcels['max_mndwi'] = rmax
+
+percentile = [stats['percentile_95'] for stats in mndwi_stats]
+geoparcels['percentile_mndwi'] = percentile
+
+
+#mcfeeters Stats adding
+counts = [stats['count'] for stats in mcfeeters_stats]
+geoparcels['counts_mcfeeters'] = counts
+
+mean = [stats['mean'] for stats in mcfeeters_stats]
+geoparcels['mean_mcfeeters'] = mean
+
+rmax = [stats['max'] for stats in mcfeeters_stats]
+geoparcels['max_mcfeeters'] = rmax
+
+percentile = [stats['percentile_95'] for stats in mcfeeters_stats]
+geoparcels['percentile_mcfeeters'] = percentile
+
+#PLOT
+
+def plot_all_indices(data, count, mean, max, percentile, name):
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    data.plot(column=count, legend=True, cmap='Spectral',ax=ax )
+    ax.set_title(name + count, fontsize=30)
+    plt.show()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    data.plot(column=mean, legend=True, cmap='Spectral',ax=ax)
+    ax.set_title(name + mean, fontsize=30)
+    plt.show()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    data.plot(column=max, legend=True, cmap='Spectral',ax=ax)
+    ax.set_title(name + max, fontsize=30)
+    plt.show()
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    data.plot(column=percentile, legend=True, cmap='Spectral',ax=ax)
+    ax.set_title(name + percentile, fontsize=30)
+    plt.show()
+
+#gao plotting
+plot_all_indices(geoparcels, 'counts_gao', 'mean_gao', 'max_gao', 'percentile_gao', 'NDWI ')
+
+#mndwi plotting
+plot_all_indices(geoparcels, 'counts_mndwi', 'mean_mndwi', 'max_mndwi', 'percentile_mndwi', 'MNDWI ')
+
+#mcfeeters plotting
+plot_all_indices(geoparcels, 'counts_mcfeeters', 'mean_mcfeeters', 'max_mcfeeters', 'percentile_mcfeeters', 'Mc Feeters ')
+
+
+
+
+#hotspot algorihtm
+amount_of_images = 4
+
+#for images in amount_of_images:
+
+#parcel_json = json.dumps(shapely.geometry.mapping(new_parcels))
+#zonal_stats(parcel_json)
+#['{"type": "Polygon", "coordinates": [[[684827.2392268141, 5884044.476651217], [684829.3855335615, 5884042.766186684], ...]
+
+
+#plot count data in color from data frame
+
+# print(gao_stats)
 #show(ndwi_mcfeeters, title='NDWI mcfeeters', cmap='gist_ncar')
 
 #geopandas dataframe get count, min, max, mean
-'''
-perc = [stats['percentile_95'] for stats in gao_stats]
-geoparcels['percentile_95'] = perc
-geoparcels.plot(column='percentile_95', cmap='Spectral', legend=True)
-plt.show()
-
-
-counts = [stats['count'] for stats in gao_stats]
-geoparcels['counts'] = counts
-geoparcels.plot(column='counts',cmap='prism', legend=True)
-plt.show()
-
-max = [stats['max'] for stats in gao_stats]
-geoparcels['max'] = max
-geoparcels.plot(column='max',cmap='hot', legend=True)
-plt.show()
-
-mean = [stats['mean'] for stats in gao_stats]
-geoparcels['mean'] = mean
-geoparcels.plot(column='mean', cmap='hot', legend=True)
-plt.show()
-'''
