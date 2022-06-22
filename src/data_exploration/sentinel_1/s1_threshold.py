@@ -19,6 +19,7 @@ from rasterstats import zonal_stats
 from rasterio.plot import show
 from zipfile import ZipFile
 from src.util import get_study_area, get_image_data
+import matplotlib.pyplot as plt
 
 #           Sed directory
 os.chdir(r'C:\Projects\pooling-detection')
@@ -145,12 +146,23 @@ std = round(std / 4., 4) ; print('Std: ', std)
 median = round(median / 4., 4) ; print('Median: ', median)
 
 # %%
-#                   4. VISUALISE
+#                   4. VISUALISE BASED ON THRESHOLDS
 pond20200218 = np.logical_and(S1A_20200218_VH_db >= 1.4712, S1A_20200218_VH_db <= 2.1641) ; show(pond20200218)
 pond20210619 = np.logical_and(S1A_20210619_VH_db >= 1.4712, S1A_20210619_VH_db <= 2.1641) ; show(pond20210619)
 pond20211022 = np.logical_and(S1A_20211022_VH_db >= 1.4712, S1A_20211022_VH_db <= 2.1641) ; show(pond20211022)
-
 # mask parcels
+masked_band1 = np.ma.array(S1A_20200218_VH_db,
+                           mask=(pond20200218 | S1A_20200218_VH_db.mask),
+                           dtype=np.float32, fill_value=-999.)
+pond20200218_m = masked_band1.filled()
+masked_band2 = np.ma.array(S1A_20210619_VH_db,
+                           mask=(pond20210619 | S1A_20210619_VH_db.mask),
+                           dtype=np.float32, fill_value=-999.)
+pond20210619_m = masked_band2.filled()
+masked_band3 = np.ma.array(S1A_20211022_VH_db,
+                           mask=(pond20211022 | S1A_20211022_VH_db.mask),
+                           dtype=np.float32, fill_value=-999.)  # 3
+pond20211022_m = masked_band3.filled()
 
 # %%
 
@@ -164,8 +176,29 @@ full_stats_20210619 = zonal_stats(parcels, S1A_20210619_VH_db_m,
                                   affine=geometry_2,
                                   nodata=-999.) ; print('full_stats_20210619 Done')
 
-full_stats_20211022 = zonal_stats(parcels, S1A_20211022_VH_db_m,
+full_stats_20211022 = zonal_stats(parcels, pond20211022_m,
                                   stats="count min median mean max std",
                                   affine=geometry_3,
                                   nodata=-999.) ; print('full_stats_20211022 Done')
-show(full_stats_20211022)
+
+#%%
+mean = [stats['count'] for stats in full_stats_20200218]
+parcels['count'] = mean
+fig, ax = plt.subplots(figsize=(12, 8))
+parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
+ax.set_title("full_stats_20200218" + ' count', fontsize=30)
+plt.show()
+
+mean = [stats['count'] for stats in full_stats_20210619]
+parcels['count'] = mean
+fig, ax = plt.subplots(figsize=(12, 8))
+parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
+ax.set_title("full_stats_20210619" + ' count', fontsize=30)
+plt.show()
+
+mean = [stats['count'] for stats in full_stats_20211022]
+parcels['count'] = mean
+fig, ax = plt.subplots(figsize=(12, 8))
+parcels.plot(column='count', legend=True, cmap='Spectral',ax=ax)
+ax.set_title("full_stats_20211022" + ' count', fontsize=30)
+plt.show()
