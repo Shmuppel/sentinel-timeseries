@@ -12,11 +12,11 @@ import pandas as pd
 #import shapefile
 
 #load parcels
-parcelpath = r"C:\Projects\pooling-detection\resources\study_area\BRP_AOI_RDNew.geojson"
+parcelpath = "resources/study_area/BRP_AOI_RDNew.geojson"
 #parcelsall = get_study_area(parcelpath)
 parcelsall = get_parcels(parcelpath)
-#parcelsall = gpd.read_file(parcelpath)
-
+geoparcels = gpd.read_file(parcelpath)
+geomparcels = geoparcels['geometry']
 # Polygon into geojson
 transformer = pyproj.Transformer.from_crs(
     pyproj.CRS('EPSG:28992'),  # Assuming the study / crop area is in RD New
@@ -56,4 +56,11 @@ panda_parcel['count'] = counts
 print(gao_stats)
 #show(ndwi_mcfeeters, title='NDWI mcfeeters', cmap='gist_ncar')
 
+#geopandas dataframe get count, min, max, mean
 
+counts = [stats['count'] for stats in gao_stats]
+geoparcels['counts'] = counts
+
+
+geoparcels.plot(column='counts', legend=True)
+plt.show()
