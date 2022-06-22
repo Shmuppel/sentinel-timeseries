@@ -72,6 +72,11 @@ def get_image_data(
 
         return band_masked, geometry_transform
 
+def s1_stats(index_stat,geodataframe,indexname):
+    # count
+    counts = [stats['count'] for stats in index_stat]
+    geodataframe['counts_'+ indexname] = counts
+    return geodataframe
 
 def stats_to_gdf(index_stat,geodataframe,indexname):
     # Adding statistical data: count, mean, max and percentile, to a geodataframe
@@ -149,3 +154,4 @@ def plot1_indices(data, thing, name):
     data.plot(column=thing, legend=True, cmap='Spectral',ax=ax )
     ax.set_title(name + thing, fontsize=30)
     plt.show()
+

@@ -18,7 +18,7 @@ from osgeo import gdal
 from rasterstats import zonal_stats
 from rasterio.plot import show
 from zipfile import ZipFile
-from src.util import get_study_area, get_image_data
+from src.util import get_study_area, get_image_data, s1_stats, plot1_indices
 import matplotlib.pyplot as plt
 
 #           Sed directory
@@ -182,6 +182,12 @@ full_stats_20211022 = zonal_stats(parcels, pond20211022_m,
                                   nodata=-999.) ; print('full_stats_20211022 Done')
 
 #%%
+
+a = s1_stats(full_stats_20200218, parcels, 'count')
+plot1_indices(a, 'count', 'full_stats_20200218')
+
+
+
 mean = [stats['count'] for stats in full_stats_20200218]
 parcels['count'] = mean
 fig, ax = plt.subplots(figsize=(12, 8))
