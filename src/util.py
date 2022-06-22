@@ -68,3 +68,30 @@ def get_image_data(
         band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.int16, fill_value=0)
 
         return band_masked, geometry_transform
+
+
+def StatsToGDF(index_stat,geodataframe,indexname):
+    # Adding statistical data: count, mean, max and percentile, to a geodataframe
+    # count
+    counts = [stats['count'] for stats in index_stat]
+    geodataframe['counts_'+ indexname] = counts
+    # mean
+    mean = [stats['mean'] for stats in index_stat]
+    geodataframe['mean_' + indexname] = mean
+    # max
+    rmax = [stats['max'] for stats in index_stat]
+    geodataframe['max_' + indexname] = rmax
+    # percentile
+    percentile = [stats['percentile_95'] for stats in index_stat]
+    geodataframe['percentile_' + indexname] = percentile
+
+    return geodataframe
+
+# Gao stats to Geodataframe
+StatsToGDF(gao_stats,geoparcels,"gao")
+
+# mcfeeters stats to Geodataframe
+StatsToGDF(mcfeeters_stats, geoparcels,"mcfeeters")
+
+# mndwi stats to Geodataframe
+StatsToGDF(mndwi_stats, geoparcels,"mndwi")
