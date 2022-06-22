@@ -41,6 +41,18 @@ masked_filled = masked_band.filled()
 
 gao_stats = zonal_stats([shapely.geometry.mapping(parcel) for parcel in new_parcels], masked_filled, affine = geometry_transform, nodata = -999)
 
+#add colum to dataframe with the count data
+panda_parcel = gpd.GeoSeries(new_parcels)
+
+counts = [stats['count'] for stats in gao_stats]
+
+panda_parcel['count'] = counts
+
+
+
+
+#plot count data in color from data frame
+
 print(gao_stats)
 #show(ndwi_mcfeeters, title='NDWI mcfeeters', cmap='gist_ncar')
 
