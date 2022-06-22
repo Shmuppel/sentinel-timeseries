@@ -103,8 +103,8 @@ def main(zipfile):
     print('Normalised the three bands')
 
     #Create a proper output name and place
-    output_name = os.path.join(output_folder, zip_name.split("\\")[-1][:-4]) #Remove E\ACT and the .zip
-    output_name = output_name.replace("\\","/")
+    output_name = os.path.join(output_folder, zip_name.split("\\")[-1][:-4])
+    output_name = output_name.replace("\\", "/")
 
     #Stack the normalised arrays
     s1_rgb = stack_arrays(vv_db_norm, vh_db_norm, ratio_norm)
