@@ -73,7 +73,7 @@ def get_image_data(
         return band_masked, geometry_transform
 
 
-def StatsToGDF(index_stat,geodataframe,indexname):
+def stats_to_gdf(index_stat,geodataframe,indexname):
     # Adding statistical data: count, mean, max and percentile, to a geodataframe
     # count
     counts = [stats['count'] for stats in index_stat]

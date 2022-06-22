@@ -26,13 +26,13 @@ mcfeeters_stats = zonals(ndwi_mcfeeters, geometry_transform, new_parcels)
 
 
 # Gao stats to Geodataframe
-StatsToGDF(gao_stats,geoparcels,"gao")
+stats_to_gdf(gao_stats,geoparcels,"gao")
 
 # mcfeeters stats to Geodataframe
-StatsToGDF(mcfeeters_stats, geoparcels,"mcfeeters")
+stats_to_gdf(mcfeeters_stats, geoparcels,"mcfeeters")
 
 # mndwi stats to Geodataframe
-StatsToGDF(mndwi_stats, geoparcels,"mndwi")
+stats_to_gdf(mndwi_stats, geoparcels,"mndwi")
 
 
 #gao plotting
