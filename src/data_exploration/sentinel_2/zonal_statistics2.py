@@ -8,7 +8,7 @@ import geopandas as gpd
 
 
 #Load parcel map
-new_parcels, geoparcels = load_parcels("resources/study_area/BRP_AOI_RDNew.geojson")
+new_parcels, geoparcels = load_parcels(r"C:\Projects\pooling-detection\resources\study_area\BRP_AOI_RDNew.geojson")
 
 #load indice maps
 ndwi_gao, ndwi_mcfeeters, mndwi_xu, geometry_transform = calculate_indices()
@@ -32,7 +32,7 @@ stats_to_gdf(gao_stats,geoparcels,"gao")
 stats_to_gdf(mcfeeters_stats, geoparcels,"mcfeeters")
 
 # mndwi stats to Geodataframe
-stats_to_gdf(mndwi_stats, geoparcels,"mndwi")
+stats_to_gdf(mndwi_stats, geoparcels,"xu")
 
 
 #gao plotting
@@ -42,7 +42,7 @@ plot_all_indices(geoparcels, 'counts_gao', 'mean_gao', 'max_gao', 'percentile_ga
 plot_all_indices(geoparcels, 'counts_mndwi', 'mean_mndwi', 'max_mndwi', 'percentile_mndwi', 'MNDWI ')
 
 #mcfeeters plotting
-plot_all_indices(geoparcels, 'counts_mcfeeters', 'mean_mcfeeters', 'max_mcfeeters', 'percentile_mcfeeters', 'Mc Feeters ')
+plot_all_indices(geoparcels, 'counts_mcfeeters', 'mean_mcfeeters', 'max_mcfeeters', 'percentile_mcfeeters', 'NDWI ')
 
 
 
