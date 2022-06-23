@@ -28,13 +28,6 @@ def RGB_dict(input_dict):
     return rgb_dictionary
 
 
-
-# Detect change in parcel values between the different images, use threshold
-#array_stack = []
-#for key, value in rgbs.items():
- #   array_stack.append(np.load(value))
- #   print('np loaded')
-
 #Plot the individual images
 #for i in range(len(array_stack)):
  #   #show(array_stack[i])
@@ -45,17 +38,44 @@ def RGB_dict(input_dict):
 
 
 #### Zonal statistics per parcel
-def get_zonalstats(rgbs, bbox):
-    stats = []
+def get_zonalstats_s1(rgbs, parcels):
+    all_stats = []
     for key, value in rgbs.items():
         raster = np.load(value[0])
         for element in raster:
-            stats.append(zonal_stats(bbox,
+            all_stats.append(zonal_stats(parcels,
                                      element,
                                      stats=['count', 'min', 'median', 'mean', 'max', 'std'],
                                      affine=value[1],
                                      nodata=-999.))
-    return stats
+    print('Zonal statistics are calculated')
+    return all_stats
+#Returns statistics for all parcels on three dates for all three the bands. So no. of parcels * 9
+
+
+def s1_stat(all_statistics, parcels, stat_type):
+    breakpoint()
+    for list in all_statistics:
+        for element in list:
+            stat = element.get(stat_type)
+            parcels[stat]
+    return parcels
+
+    #stat_type = [stats[stat_type] for stats in all_statistics]
+    #counts = [stats['count'] for stats in zonal_statistics]
+    #parcels[stat_type] = stat_type
+    #return parcels
+
+
+
+#count_counts = number of pixels per parcel that are in between the thresholds
+
+#stats = stats per parcel, output of get_zonalstats
+def plot_S1_stats(parcels, stat, stats_dataset):
+    fig, ax = plt.subplots(figsize=(12, 8))
+    parcels.plot(column=stat, legend=True, cmap='Spectral', ax=ax)
+    ax.set_title(stats_dataset + stat, fontsize=30)
+    plt.show()
 
 
 
@@ -70,12 +90,19 @@ def main_tsa():
     parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
 
     #Create bounding box
+    #Can be removed later if code works, replace by 'parcels'
     bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
 
-    #Get zonal statistics per parcel and per date
-    zonal_stats = get_zonalstats(rgbs, bbox)
+    #Get zonal statistics (count, min, median, mean, max, std) per parcel and per date
+    zonal_stats = get_zonalstats_s1(rgbs, bbox)
 
-    print(zonal_stats)
+    #The following statistics can be plotted:
+    #'count', 'min', 'median', 'mean', 'max', 'std'
+    #Get the maximum and plot it
+    breakpoint()
+    maximum = s1_stat(zonal_stats, bbox, 'max')
+    plot_S1_stats(bbox, maximum, zonal_stats)
+
     return zonal_stats
 
 if __name__ == '__main__':
