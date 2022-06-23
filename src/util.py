@@ -149,3 +149,8 @@ def plot1_indices(data, to_plot, name):
     data.plot(column=to_plot, legend=True, cmap='Spectral',ax=ax )
     ax.set_title(name + to_plot, fontsize=30)
     plt.show()
+
+# Json dumps: make a .json
+json_gao = json.dumps(gao_stats,
+                         skipkeys = True,
+                         allow_nan = True)
