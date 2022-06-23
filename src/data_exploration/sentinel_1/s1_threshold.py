@@ -154,11 +154,10 @@ pond20200218_m, pond20210619_m, pond20211022_m = pond_mask(S1A_20200218_VH_db, p
 full_stats_20200218, full_stats_20210619, full_stats_20211022 = stats_calc(pond20200218_m, geometry_1, parcels), \
                                                                 stats_calc(pond20210619_m, geometry_2, parcels), \
                                                                 stats_calc(pond20211022_m, geometry_3, parcels)
-# Calculate counts of count
+# Calculate counts of count & Plot the count of the poonding pixels
 s1_stats(full_stats_20200218, parcels, 'count')
-s1_stats(full_stats_20210619, parcels, 'count')
-s1_stats(full_stats_20211022, parcels, 'count')
-# Plot the count of the poonding pixels
 plot1_indices(parcels, 'counts_count', 'full_stats_20200218 ')
+s1_stats(full_stats_20210619, parcels, 'count')
 plot1_indices(parcels, 'counts_count', 'full_stats_20210619 ')
+s1_stats(full_stats_20211022, parcels, 'count')
 plot1_indices(parcels, 'counts_count', 'full_stats_20211022 ')
