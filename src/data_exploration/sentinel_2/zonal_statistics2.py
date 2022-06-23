@@ -39,7 +39,7 @@ stats_to_gdf(mndwi_stats, geoparcels,"xu")
 plot_all_indices(geoparcels, 'counts_gao', 'mean_gao', 'max_gao', 'percentile_gao', 'NDWI ')
 
 #mndwi plotting
-plot_all_indices(geoparcels, 'counts_mndwi', 'mean_mndwi', 'max_mndwi', 'percentile_mndwi', 'MNDWI ')
+plot_all_indices(geoparcels, 'counts_xu', 'mean_xu', 'max_xu', 'percentile_xu', 'MNDWI ')
 
 #mcfeeters plotting
 plot_all_indices(geoparcels, 'counts_mcfeeters', 'mean_mcfeeters', 'max_mcfeeters', 'percentile_mcfeeters', 'NDWI ')
@@ -50,3 +50,7 @@ plot_all_indices(geoparcels, 'counts_mcfeeters', 'mean_mcfeeters', 'max_mcfeeter
 #hotspot algorihtm
 amount_of_images = 4
 
+#calculate the stats for multiple images
+
+#sum all pixel values and divede by the amount of images
+#create and extra column that has average and plot that
