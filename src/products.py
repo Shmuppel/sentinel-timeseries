@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 from abc import ABC
 
 import pyproj
@@ -22,9 +23,19 @@ class Product(ABC):
         self.api = api
         self.product_id = product_id
         self.aoi = aoi
-        self.warp = warp
-        self.working_directory = working_directory
-        self.bands = {}
+        self.warp = warp  # Whether the images should be warped to a CRS before processing
+        self.working_directory = working_directory  # Directory to read and write temporary images
+        self.bands = {}  # Holds the actual product measurements
+
+    def __getitem__(self, key):
+        return self.bands[key]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        shutil.rmtree(f'{self.working_directory}')
+        os.mkdir(f'{self.working_directory}')
 
     def create_bands(self):
         pass
@@ -38,14 +49,17 @@ class Product(ABC):
         for band_name, band in self.bands.items():
             if not band: continue
             warped_band_path = f'{warped_dir}/{band.name}.tiff'
+            if os.path.exists(warped_band_path): continue
+            print(f'Product {self.product_id}: warping band {band_name} to EPSG:{self.warp.to_epsg()}...')
             gdal.Warp(warped_band_path, band.path, dstSRS=f'EPSG:{self.warp.to_epsg()}')
             band.path = warped_band_path
 
     def get_bands(self, path_filter):
-        image_metadata = self.api.download(self.product_id,
-                                           nodefilter=path_filter,
-                                           directory_path=self.working_directory)
-        date = image_metadata['date'].strftime("%Y/%m/%d")
+        self.api.download(
+            self.product_id,
+            nodefilter=path_filter,
+            directory_path=self.working_directory
+        )
         self.create_bands()
         if self.warp: self.warp_bands()
         self.get_arrays()
@@ -56,8 +70,9 @@ class Sentinel2Product(Product):
     def create_bands(self):
         band_paths = glob.glob(f'{self.working_directory}/**/*.jp2', recursive=True)
         for band_path in band_paths:
-            spatial_resolution = int(band_path[-7:-5])
             band_name = int(band_path[-10:-8])
+            spatial_resolution = int(band_path[-7:-5])
+            if band_name in self.bands.keys(): continue
             self.bands[band_name] = Band(name=band_name, path=band_path, spatial_resolution=spatial_resolution)
 
     def get_arrays(self):

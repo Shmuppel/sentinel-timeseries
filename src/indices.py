@@ -4,15 +4,17 @@ from products import Product
 
 
 class Indice:
+    PATH_REGEX = r""
+
     def __init__(self, product: Product):
         self.product = product
         self.product.get_bands(self.path_filter)
 
-    @staticmethod
-    def path_filter(node_info: dict):
-        pass
+    def path_filter(self, node_info: dict):
+        pattern = self.PATH_REGEX
+        return bool(re.search(pattern, node_info['node_path']))
 
-    def download(self):
+    def get_affine_transform(self):
         pass
 
     def calculate(self):
@@ -20,13 +22,30 @@ class Indice:
 
 
 class NDWI_GAO(Indice):
+    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B08_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
 
-    @staticmethod
-    def path_filter(node_info):
-        """ Only extract bands 03, 08, 11 """
-        pattern = r"(.\/GRANULE\/.*\/R10m\/.*_B08_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
-        return bool(re.search(pattern, node_info['node_path']))
+    def get_affine_transform(self):
+        return self.product[8].array_affine_transform
 
     def calculate(self):
-        assert all((self.product.bands[8], self.product.bands[11])), "NDWI_GAO: Not all bands are downloaded"
-        return (self.product.bands[8] - self.product.bands[11]) / (self.product.bands[8] + self.product.bands[11])
+        return (self.product[8] - self.product[11]) / (self.product[8] + self.product[11])
+
+
+class NDWI_MCFEETER(Indice):
+    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B0[38]_.*.jp2$)"
+
+    def get_affine_transform(self):
+        return self.product[3].array_affine_transform
+
+    def calculate(self):
+        return (self.product[3] - self.product[8]) / (self.product[3] + self.product[8])
+
+
+class MNDWI_XU(Indice):
+    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B03_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
+
+    def get_affine_transform(self):
+        return self.product[3].array_affine_transform
+
+    def calculate(self):
+        return (self.product[3] - self.product[11]) / (self.product[3] + self.product[11])

@@ -18,12 +18,12 @@ class NearRealtimeAPI:
             self,
             username: str,
             password: str,
-            footprint: shapely.geometry.shape,
+            aoi: shapely.geometry.shape,
             warp: pyproj.CRS,
             working_directory: str
     ):
         self.api = SentinelAPI(username, password)
-        self.footprint = footprint
+        self.aoi = aoi
         self.warp = warp
         self.working_directory = working_directory
 
@@ -34,7 +34,7 @@ class NearRealtimeAPI:
     ) -> list[str]:
         """
         """
-        products = self.api.query(self.footprint.wkt,
+        products = self.api.query(self.aoi.wkt,
                                   date=(start_date, end_date),
                                   producttype='GRD',
                                   orbitdirection='ASCENDING',
@@ -50,7 +50,7 @@ class NearRealtimeAPI:
     ) -> list[Sentinel2Product]:
         """
         """
-        products = self.api.query(self.footprint.wkt,
+        products = self.api.query(self.aoi.wkt,
                                   date=(start_date, end_date),
                                   processinglevel='Level-2A',
                                   platformname='Sentinel-2',
@@ -58,9 +58,9 @@ class NearRealtimeAPI:
         return [Sentinel2Product(
             api=self.api,
             product_id=product_id,
-            aoi=self.footprint,
+            aoi=self.aoi,
             warp=self.warp,
-            working_directory=f'{self.working_directory}/sentinel2'
+            working_directory=self.working_directory
         ) for product_id in self.check_products(products)]
 
     def check_available_products(

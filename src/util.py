@@ -7,11 +7,6 @@ from rasterio.enums import Resampling
 from shapely.geometry import shape, box
 
 
-def calculate_normalized_index(band1, band2):
-    """ Returns a normalized index from two bands. """
-    return (band1 - band2) / (band1 + band2)
-
-
 def get_polygon_from_geojson(file_path: str):
     """ Returns a single shapely Polygon from a geojson file. """
     with open(file_path, 'r') as f:
