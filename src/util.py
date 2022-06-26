@@ -1,11 +1,10 @@
 import json
 import numpy as np
-import pyproj
 import rasterio
 import rasterio.features
+from pyproj import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import shape, box
-from shapely.ops import transform
 
 
 def calculate_normalized_index(band1, band2):
@@ -13,12 +12,12 @@ def calculate_normalized_index(band1, band2):
     return (band1 - band2) / (band1 + band2)
 
 
-def get_study_area(file_path: str):
-    """ Returns the study area as shapely Polygon. """
+def get_polygon_from_geojson(file_path: str):
+    """ Returns a single shapely Polygon from a geojson file. """
     with open(file_path, 'r') as f:
-        aoi_json = json.load(f)['features']
-        aoi_shape = shape(aoi_json[0]["geometry"])
-    return aoi_shape
+        features = json.load(f)['features']
+        polygon = shape(features[0]["geometry"])
+    return polygon
 
 
 def get_image_data(
@@ -32,13 +31,7 @@ def get_image_data(
   resample: Resamples the image to given dimensions.
   """
     with rasterio.open(image_path) as ds:
-        assert ds.crs  # Raise error if image does not have CRS
-        print(f'Satellite image CRS: {ds.crs.to_epsg()}')
-        transformer = pyproj.Transformer.from_crs(
-            pyproj.CRS('EPSG:28992'),  # Assuming the study / crop area is in RD New
-            pyproj.CRS(f'EPSG:{ds.crs.to_epsg()}'),   # The CRS as specified in the image
-            always_xy=True).transform
-        crop_shape = transform(transformer, crop_shape)
+        assert ds.crs == CRS.from_epsg(4326)  # Raise error if image does not have the right CRS
         bounding_box = box(*crop_shape.bounds)
 
         # Crop raster -- get bounding window of shape(s) in raster.

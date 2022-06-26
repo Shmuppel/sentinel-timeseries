@@ -2,21 +2,39 @@ import re
 import time
 import click
 from datetime import date
-from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
+
+import pyproj
+import shapely.geometry
+from sentinelsat import SentinelAPI
+
+from products import Sentinel2Product
 
 
-class API:
+class NearRealtimeAPI:
+    """
+    """
 
-    def __init__(self, username, password, footprint_pathname):
-        self.footprint = geojson_to_wkt(read_geojson(footprint_pathname))
+    def __init__(
+            self,
+            username: str,
+            password: str,
+            footprint: shapely.geometry.shape,
+            warp: pyproj.CRS,
+            working_directory: str
+    ):
         self.api = SentinelAPI(username, password)
+        self.footprint = footprint
+        self.warp = warp
+        self.working_directory = working_directory
 
     def get_sentinel1_products(
             self,
             start_date: date,
             end_date: date
     ) -> list[str]:
-        products = self.api.query(self.footprint,
+        """
+        """
+        products = self.api.query(self.footprint.wkt,
                                   date=(start_date, end_date),
                                   producttype='GRD',
                                   orbitdirection='ASCENDING',
@@ -27,26 +45,35 @@ class API:
     def get_sentinel2_products(
             self,
             start_date: date,
-            end_date: date
-    ) -> list[str]:
-        products = self.api.query(self.footprint,
+            end_date: date,
+            cloudcover: tuple[int] = (0, 5),
+    ) -> list[Sentinel2Product]:
+        """
+        """
+        products = self.api.query(self.footprint.wkt,
                                   date=(start_date, end_date),
                                   processinglevel='Level-2A',
                                   platformname='Sentinel-2',
-                                  cloudcoverpercentage=(0, 5))
-        products = self.check_products(products)
-        return products
+                                  cloudcoverpercentage=cloudcover)
+        return [Sentinel2Product(
+            api=self.api,
+            product_id=product_id,
+            aoi=self.footprint,
+            warp=self.warp,
+            working_directory=f'{self.working_directory}/sentinel2'
+        ) for product_id in self.check_products(products)]
 
     def check_available_products(
             self,
             products: dict[str, dict]
     ) -> tuple[list[str], list[str]]:
+        """
+        """
         online_products, lta_products = [], []
         # Check how many items are available online, and how many will have to be accessed through LTA storage.
         for key in products.keys():
             online_products.append(key) if self.api.is_online(key) else lta_products.append(key)
-        print(
-            f"API > {len(online_products)}/{len(online_products) + len(lta_products)} images directly downloadable online.")
+        print(f"API > {len(online_products)}/{len(online_products) + len(lta_products)} images directly downloadable online.")
         return online_products, lta_products
 
     def check_products(
