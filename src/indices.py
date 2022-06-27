@@ -1,51 +1,37 @@
-import re
-
+from band import Band
 from products import Product
 
 
 class Indice:
-    PATH_REGEX = r""
+    BANDS = []
 
     def __init__(self, product: Product):
         self.product = product
-        self.product.get_bands(self.path_filter)
-
-    def path_filter(self, node_info: dict):
-        pattern = self.PATH_REGEX
-        return bool(re.search(pattern, node_info['node_path']))
-
-    def get_affine_transform(self):
-        pass
+        self.product.get_bands(self.BANDS)
 
     def calculate(self):
         pass
 
 
 class NDWI_GAO(Indice):
-    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B08_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
-
-    def get_affine_transform(self):
-        return self.product[8].array_affine_transform
+    BANDS = (Band(mission='Sentinel2', number='08', spatial_resolution=20),
+             Band(mission='Sentinel2', number='11', spatial_resolution=20))
 
     def calculate(self):
-        return (self.product[8] - self.product[11]) / (self.product[8] + self.product[11])
+        return (self.product['08'] - self.product['11']) / (self.product['08'] + self.product['11'])
 
 
 class NDWI_MCFEETER(Indice):
-    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B0[38]_.*.jp2$)"
-
-    def get_affine_transform(self):
-        return self.product[3].array_affine_transform
+    BANDS = (Band(mission='Sentinel2', number='03', spatial_resolution=10),
+             Band(mission='Sentinel2', number='08', spatial_resolution=10),)
 
     def calculate(self):
-        return (self.product[3] - self.product[8]) / (self.product[3] + self.product[8])
+        return (self.product['03'] - self.product['08']) / (self.product['03'] + self.product['08'])
 
 
 class MNDWI_XU(Indice):
-    PATH_REGEX = r"(.\/GRANULE\/.*\/R10m\/.*_B03_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
-
-    def get_affine_transform(self):
-        return self.product[3].array_affine_transform
+    BANDS = (Band(mission='Sentinel2', number='03', spatial_resolution=10),
+             Band(mission='Sentinel2', number='11', spatial_resolution=20),)
 
     def calculate(self):
-        return (self.product[3] - self.product[11]) / (self.product[3] + self.product[11])
+        return (self.product['03'] - self.product['11']) / (self.product['03'] + self.product['11'])

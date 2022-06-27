@@ -13,7 +13,7 @@ def main():
 
     study_area = get_polygon_from_geojson('../resources/study_area/Polygon_WGS84.geojson')
 
-    api = NearRealtimeAPI(
+    api = SentinelTimeseriesAPI(
         username=os.getenv('COPERNICUS_HUB_USERNAME'),
         password=os.getenv('COPERNICUS_HUB_PASSWORD'),
         aoi=study_area,

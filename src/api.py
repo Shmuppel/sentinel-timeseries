@@ -1,4 +1,3 @@
-import re
 import time
 import click
 from datetime import date
@@ -10,17 +9,17 @@ from sentinelsat import SentinelAPI
 from products import Sentinel2Product
 
 
-class NearRealtimeAPI:
+class SentinelTimeseriesAPI:
     """
     """
 
     def __init__(
             self,
-            username: str,
-            password: str,
-            aoi: shapely.geometry.shape,
-            warp: pyproj.CRS,
-            working_directory: str
+            username: str,  # Copernicus open access hub username
+            password: str,  # Copernicus open access hub password
+            aoi: shapely.geometry.shape,  # A shapely geometry containing the area of interest
+            warp: pyproj.CRS,  # Whether to warp the images to a specific CRS
+            working_directory: str  # TODO this could be a default tempdir
     ):
         self.api = SentinelAPI(username, password)
         self.aoi = aoi
@@ -39,7 +38,7 @@ class NearRealtimeAPI:
                                   producttype='GRD',
                                   orbitdirection='ASCENDING',
                                   platformname='Sentinel-1')
-        products = self.check_products(products)
+        products = self.get_available_products(products)
         return products
 
     def get_sentinel2_products(
@@ -61,31 +60,30 @@ class NearRealtimeAPI:
             aoi=self.aoi,
             warp=self.warp,
             working_directory=self.working_directory
-        ) for product_id in self.check_products(products)]
+        ) for product_id in self.get_available_products(products)]
 
     def check_available_products(
             self,
             products: dict[str, dict]
     ) -> tuple[list[str], list[str]]:
-        """
-        """
+        """ Check how many items are available online, and how many will have to be accessed through LTA storage. """
         online_products, lta_products = [], []
-        # Check how many items are available online, and how many will have to be accessed through LTA storage.
         for key in products.keys():
             online_products.append(key) if self.api.is_online(key) else lta_products.append(key)
         print(f"API > {len(online_products)}/{len(online_products) + len(lta_products)} images directly downloadable online.")
         return online_products, lta_products
 
-    def check_products(
-            self,
-            products: dict[str, dict]
-    ) -> list[str]:
+    def get_available_products(self, products: dict[str, dict]) -> list[str]:
         """
+        Gets the Sentinel products that are online on the Copernicus Open Access Hub.
+        Images that are available will be downloaded straight away, however some images may be in long term archival
+        (LTA). An LTA image can be requested to come online by a user every 30min, and it may take up to 24hr for an
+        LTA image to come online. On user approval this function will request images to come online without being
+        rate limited, and it shall wait until all images are downloadable before continuing.
         """
         online_products, lta_products = self.check_available_products(products)
         # If there are not lta_products we can continue to download the online products.
-        if not (n_lta_products := len(lta_products)):
-            return online_products
+        if not (n_lta_products := len(lta_products)): return online_products
 
         # If there are any images unavailable, prompt the user if he wants to go through with LTA retrieval
         if click.confirm(f"{n_lta_products} images in long term archival, retrieve them in 30min increments? (y/n): "):
@@ -101,15 +99,3 @@ class NearRealtimeAPI:
                 if lta_products: time.sleep(900)
 
         return online_products
-
-    @staticmethod
-    def sentinel1_path_filter(node_info: dict) -> bool:
-        """ Only extract grd vv and vh bands """
-        pattern = r".\/measurement\/s1a-.*-grd-(vh|vv)-.*\.tiff$"
-        return bool(re.search(pattern, node_info['node_path']))
-
-    @staticmethod
-    def sentinel2_path_filter(node_info: dict) -> bool:
-        """ Only extract bands 03, 08, 11 """
-        pattern = r"(.\/GRANULE\/.*\/R10m\/.*_B0[38]_.*.jp2$|.\/GRANULE\/.*\/R20m\/.*_B11_.*.jp2$)"
-        return bool(re.search(pattern, node_info['node_path']))
