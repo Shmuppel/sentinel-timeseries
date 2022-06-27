@@ -38,28 +38,28 @@ def RGB_dict(input_dict):
 
 
 #### Zonal statistics per parcel
-def get_zonalstats_s1(rgbs, parcels):
-    all_stats = []
-    for key, value in rgbs.items():
-        raster = np.load(value[0])
-        for element in raster:
-            all_stats.append(zonal_stats(parcels,
-                                     element,
-                                     stats=['count', 'min', 'median', 'mean', 'max', 'std'],
-                                     affine=value[1],
-                                     nodata=-999.))
-    print('Zonal statistics are calculated')
-    return all_stats
+#def get_zonalstats_s1(rgbs, parcels):
+ #   all_stats = []
+  #  for key, value in rgbs.items():
+   #     raster = np.load(value[0])
+    #    for element in raster:
+     #       all_stats.append(zonal_stats(parcels,
+      #                               element,
+       #                              stats=['count', 'min', 'median', 'mean', 'max', 'std'],
+        #                             affine=value[1],
+         #                            nodata=-999.))
+    #print('Zonal statistics are calculated')
+    #return all_stats
 #Returns statistics for all parcels on three dates for all three the bands. So no. of parcels * 9
 
 
-def s1_stat(all_statistics, parcels, stat_type):
-    breakpoint()
-    for list in all_statistics:
-        for element in list:
-            stat = element.get(stat_type)
-            parcels[stat]
-    return parcels
+#def s1_stat(all_statistics, parcels, stat_type):
+#    breakpoint()
+#    for list in all_statistics:
+#        for element in list:
+#            stat = element.get(stat_type)
+#            parcels[stat]
+#    return parcels
 
     #stat_type = [stats[stat_type] for stats in all_statistics]
     #counts = [stats['count'] for stats in zonal_statistics]
@@ -71,11 +71,11 @@ def s1_stat(all_statistics, parcels, stat_type):
 #count_counts = number of pixels per parcel that are in between the thresholds
 
 #stats = stats per parcel, output of get_zonalstats
-def plot_S1_stats(parcels, stat, stats_dataset):
-    fig, ax = plt.subplots(figsize=(12, 8))
-    parcels.plot(column=stat, legend=True, cmap='Spectral', ax=ax)
-    ax.set_title(stats_dataset + stat, fontsize=30)
-    plt.show()
+#def plot_S1_stats(parcels, stat, stats_dataset):
+#    fig, ax = plt.subplots(figsize=(12, 8))
+#    parcels.plot(column=stat, legend=True, cmap='Spectral', ax=ax)
+#    ax.set_title(stats_dataset + stat, fontsize=30)
+#    plt.show()
 
 
 
@@ -89,21 +89,20 @@ def main_tsa():
     #Read in parcels
     parcels = gpd.read_file("resources/study_area/AOI_BRP_WGS84.geojson")
 
+    ### Zonal statistics
     #Create bounding box
     #Can be removed later if code works, replace by 'parcels'
-    bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
-
+    #bbox = parcels.loc[parcels['OBJECTID_1'].isin([1079, 562, 121, 1037]), :]
     #Get zonal statistics (count, min, median, mean, max, std) per parcel and per date
-    zonal_stats = get_zonalstats_s1(rgbs, bbox)
-
+    #zonal_stats = get_zonalstats_s1(rgbs, bbox)
     #The following statistics can be plotted:
     #'count', 'min', 'median', 'mean', 'max', 'std'
     #Get the maximum and plot it
-    breakpoint()
-    maximum = s1_stat(zonal_stats, bbox, 'max')
-    plot_S1_stats(bbox, maximum, zonal_stats)
+    #breakpoint()
+    #maximum = s1_stat(zonal_stats, bbox, 'max')
+    #plot_S1_stats(bbox, maximum, zonal_stats)
 
-    return zonal_stats
+    return rgbs
 
 if __name__ == '__main__':
     main_tsa()
