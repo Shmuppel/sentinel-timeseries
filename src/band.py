@@ -5,33 +5,36 @@ class Band:
     def __init__(
             self,
             mission: str,
-            number: Union[str, int],
+            band: Union[str, int],
             spatial_resolution: int,
             path: Optional[str] = None
     ):
         self.mission = mission
-        self.number = self.normalize_band_number(number)
+        self.band = self.normalize_band_name(band)
         self.spatial_resolution = spatial_resolution
         self.path = path
         self.array = None
         self.array_affine_transform = None
 
-    def normalize_band_number(self, number: Union[str, int]) -> str:
+    def normalize_band_name(self, band: Union[str, int]) -> str:
         """
-        Normalize the band numbers to a common format with leading zeros.
-        This makes sure the band number correlates to the one in the product path.
+        Normalize the bands to a common format with leading zeros.
+        This makes sure the band correlates to the one in the product path.
         """
-        if number == '8a': return number
-        return '0' + str(int(number)) if int(number) < 10 else str(int(number))
+        if band == '8a': return band
+        return '0' + str(int(band)) if int(band) < 10 else str(int(band))
 
     def get_path_filter(self) -> str:
         """
         """
         if self.mission == 'Sentinel2':
-            return rf"./GRANULE\/.*/R{self.spatial_resolution}m/.*_B{self.number}_.*.jp2$"
+            return rf"./GRANULE\/.*/R{self.spatial_resolution}m/.*_B{self.band}_.*.jp2$"
         if self.mission == 'Sentinel1':
             # r".\/measurement\/s1a-.*-grd-(vh|vv)-.*\.tiff$"
             raise NotImplementedError
+
+    def __bool__(self):
+        return self.array is not None
 
     def __add__(self, other):
         return self.array + other.array
