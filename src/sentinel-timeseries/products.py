@@ -25,8 +25,9 @@ class Product(ABC):
         self.product_id = product_id
         self.aoi = aoi
         self.warp = warp  # Whether the images should be warped to a CRS before processing
-        self.working_directory = working_directory  # Directory to read and write temporary images
+        self.working_directory = f'{working_directory}/{self.product_id}'  # Directory to read and write temporary images
         self.bands = {}  # Holds the actual product measurements
+        os.makedirs(self.working_directory, exist_ok=True)
 
     def create_bands(self):
         """
@@ -41,13 +42,14 @@ class Product(ABC):
     def warp_bands(self):
         """
         """
-        warped_dir = f'{self.working_directory}/warped/{self.product_id}'
+        warped_dir = f'{self.working_directory}/warped/'
         os.makedirs(warped_dir, exist_ok=True)
         for band in self.bands.values():
             warped_band_path = f'{warped_dir}/{band.band}.tiff'
             if os.path.exists(warped_band_path):
                 band.path = warped_band_path
                 continue
+
             print(f'Product {self.product_id}: warping band {band.band} to EPSG:{self.warp.to_epsg()}...')
             gdal.Warp(warped_band_path, band.path, dstSRS=f'EPSG:{self.warp.to_epsg()}')
             band.path = warped_band_path
@@ -73,7 +75,7 @@ class Product(ABC):
 
     def remove(self):
         shutil.rmtree(f'{self.working_directory}')
-        os.mkdir(f'{self.working_directory}')
+        os.mkdir(f'{self.working_directory}/{self.product_id}')
 
     def __getitem__(self, key):
         return self.bands[key]
@@ -89,7 +91,8 @@ class Sentinel2Product(Product):
 
     def create_bands(self):
         band_paths = glob.glob(f'{self.working_directory}/**/*.jp2', recursive=True)
-        for band_path in band_paths:
+        for band_file_path in band_paths:
+            band_path = band_file_path.replace(self.working_directory, '')
             band_path_split = band_path.split('_')
             band_number = band_path_split[-2]  # B03, SNWPRB, CLDPRB
             band_number = band_number[1:] if band_number.startswith('B') else band_number[:-3]  # 03, SNW, CLD
@@ -99,7 +102,7 @@ class Sentinel2Product(Product):
             self.bands[band_number] = Band(
                 mission='Sentinel2',
                 band=band_number,
-                path=band_path,
+                path=band_file_path,
                 spatial_resolution=spatial_resolution
             )
 
@@ -126,8 +129,20 @@ class Sentinel2Product(Product):
 class Sentinel1Product(Product):
 
     def create_bands(self):
-        raise NotImplementedError
+        band_paths = glob.glob(f'{self.working_directory}/**/*.tiff', recursive=True)
+        for band_file_path in band_paths:
+            band_path = band_file_path.replace(self.working_directory, '')
+            band_path_split = band_path.split('-')
+            band_number = band_path_split[3].upper()  # VV, VH
+            if band_number in self.bands.keys(): continue
+            self.bands[band_number] = Band(
+                mission='Sentinel1',
+                band=band_number,
+                path=band_file_path,
+            )
 
     def get_arrays(self):
-        raise NotImplementedError
-
+        bands = [band for band in self.bands.values()]
+        for band in bands:
+            if band.array is not None: continue  # Already got the array of this band
+            band.array, band.array_affine_transform = get_image_data(band.path, self.aoi)

@@ -6,7 +6,7 @@ class Band:
             self,
             mission: str,
             band: Union[str, int],
-            spatial_resolution: int,
+            spatial_resolution: int = None,
             path: Optional[str] = None
     ):
         self.mission = mission
@@ -30,8 +30,7 @@ class Band:
         if self.mission == 'Sentinel2':
             return rf"./GRANULE\/.*/R{self.spatial_resolution}m/.*_B{self.band}_.*.jp2$"
         if self.mission == 'Sentinel1':
-            # r".\/measurement\/s1a-.*-grd-(vh|vv)-.*\.tiff$"
-            raise NotImplementedError
+            return rf"./measurement/s1a-.*-grd-{self.band.lower()}-.*\.tiff$"
 
     def __bool__(self):
         return self.array is not None

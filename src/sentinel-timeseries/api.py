@@ -6,7 +6,7 @@ import pyproj
 import shapely.geometry
 from sentinelsat import SentinelAPI
 
-from products import Sentinel2Product
+from products import Sentinel2Product, Sentinel1Product
 
 
 class SentinelTimeseriesAPI:
@@ -30,7 +30,7 @@ class SentinelTimeseriesAPI:
             self,
             start_date: date,
             end_date: date
-    ) -> list[str]:
+    ) -> list[Sentinel1Product]:
         """
         """
         products = self.api.query(self.aoi.wkt,
@@ -38,8 +38,13 @@ class SentinelTimeseriesAPI:
                                   producttype='GRD',
                                   orbitdirection='ASCENDING',
                                   platformname='Sentinel-1')
-        products = self.get_available_products(products)
-        return products
+        return [Sentinel1Product(
+            api=self.api,
+            product_id=product_id,
+            aoi=self.aoi,
+            warp=self.warp,
+            working_directory=self.working_directory
+        ) for product_id in self.get_available_products(products)]
 
     def get_sentinel2_products(
             self,
