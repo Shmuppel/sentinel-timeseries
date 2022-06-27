@@ -71,6 +71,10 @@ class Product(ABC):
         if self.warp: self.warp_bands()
         self.get_arrays()
 
+    def remove(self):
+        shutil.rmtree(f'{self.working_directory}')
+        os.mkdir(f'{self.working_directory}')
+
     def __getitem__(self, key):
         return self.bands[key]
 
@@ -78,8 +82,7 @@ class Product(ABC):
         return self
 
     def __exit__(self, *args):
-        shutil.rmtree(f'{self.working_directory}')
-        os.mkdir(f'{self.working_directory}')
+        self.remove()
 
 
 class Sentinel2Product(Product):

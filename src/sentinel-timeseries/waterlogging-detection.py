@@ -25,8 +25,8 @@ def main():
     sentinel2_products = api.get_sentinel2_products(date(2022, 1, 1), date(2022, 2, 27))
 
     for product in sentinel2_products:
-        ndwi_gao = NDWI_GAO(product)
-        ndwi_mcfeeter = NDWI_MCFEETER(product)
+        # ndwi_gao = NDWI_GAO(product)
+        # ndwi_mcfeeter = NDWI_MCFEETER(product)
         mndwi_xu = MNDWI_XU(product)
         breakpoint()
 
