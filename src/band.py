@@ -21,7 +21,7 @@ class Band:
         Normalize the bands to a common format with leading zeros.
         This makes sure the band correlates to the one in the product path.
         """
-        if band == '8a': return band
+        if band in ['8a', 'CLD', 'SNW', 'VV', 'VH']: return band  # Ignore string-based band names
         return '0' + str(int(band)) if int(band) < 10 else str(int(band))
 
     def get_path_filter(self) -> str:

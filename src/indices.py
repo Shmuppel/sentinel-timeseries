@@ -1,13 +1,14 @@
 from band import Band
-from products import Product
+from products import Sentinel2Product
 
 
 class Indice:
     BANDS = []
 
-    def __init__(self, product: Product):
+    def __init__(self, product: Sentinel2Product):
         self.product = product
         self.product.get_bands(self.BANDS)
+        self.product.mask_clouds_and_snow()
 
     def calculate(self):
         pass

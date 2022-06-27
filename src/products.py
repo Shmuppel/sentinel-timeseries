@@ -3,7 +3,7 @@ import os
 import re
 import shutil
 from abc import ABC
-
+import numpy as np
 import pyproj
 from osgeo import gdal
 
@@ -55,7 +55,11 @@ class Product(ABC):
     def get_bands(self, bands: list[Band]):
         """
         """
-        path_filter_pattern = rf"({'|'.join([band.get_path_filter() for band in bands])})"
+        # Cloud and Snow masks are tiny and would only match Sentinel 2 imagery.
+        path_filters = ['.*MSK_CLDPRB_20m.jp2', '.*MSK_SNWPRB_20m.jp2']
+        path_filters.extend([band.get_path_filter() for band in bands])
+        path_filter_pattern = rf"({'|'.join(path_filters)})"
+
         self.api.download(
             self.product_id,
             nodefilter=lambda node_info: bool(re.search(path_filter_pattern, node_info['node_path'])),
@@ -83,9 +87,12 @@ class Sentinel2Product(Product):
     def create_bands(self):
         band_paths = glob.glob(f'{self.working_directory}/**/*.jp2', recursive=True)
         for band_path in band_paths:
-            band_number = band_path[-10:-8]
-            spatial_resolution = int(band_path[-7:-5])
+            band_path_split = band_path.split('_')
+            band_number = band_path_split[-2]  # B03, SNWPRB, CLDPRB
+            band_number = band_number[1:] if band_number.startswith('B') else band_number[:-3]  # 03, SNW, CLD
+            spatial_resolution = int(band_path_split[-1][:-5])
             if band_number in self.bands.keys(): continue
+
             self.bands[band_number] = Band(
                 mission='Sentinel2',
                 band=band_number,
@@ -101,6 +108,16 @@ class Sentinel2Product(Product):
             if band.array is not None: continue  # Already got the array of this band
             band.array, band.array_affine_transform = get_image_data(band.path, self.aoi, resample)
             if not resample: resample = band.array.shape
+
+    def mask_clouds_and_snow(self):
+        assert all((self.bands['CLD'], self.bands['SNW']))
+        clouds, snow = self.bands['CLD'].array, self.bands['SNW'].array
+        for band in self.bands.values():
+            if band.band == 'CLD' or band.band == 'SNW': continue
+            band.array = np.ma.array(band.array,
+                                     mask=((clouds > 0) | (snow > 0) | band.array.mask),
+                                     dtype=np.float32,
+                                     fill_value=-999)
 
 
 class Sentinel1Product(Product):
