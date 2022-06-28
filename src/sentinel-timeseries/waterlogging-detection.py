@@ -6,7 +6,7 @@ from pyproj import CRS
 
 from api import *
 from util.shapes import get_polygon_from_geojson
-from process_sentinel1_rgb import process_sentinel1_rgb
+from process_sentinel1 import process_sentinel1
 from process_sentinel2 import process_sentinel2
 
 
@@ -23,8 +23,8 @@ def main():
         warp=CRS('EPSG:4326'),
         working_directory='../resources/images'
     )
-    #process_sentinel1_rgb(api, parcels)
-    process_sentinel2(api, parcels)
+    process_sentinel1(api, parcels)
+    #process_sentinel2(api, parcels)
 
 
 if __name__ == '__main__':

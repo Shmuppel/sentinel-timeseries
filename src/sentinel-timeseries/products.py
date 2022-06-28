@@ -80,7 +80,7 @@ class Product(ABC):
 
 
 class Sentinel2Product(Product):
-    def __init__(self, *args: dict, **kwargs: dict) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.bands = {
             'B01': Band(mission='Sentinel2', name='B01', spatial_resolution=60),
@@ -110,6 +110,7 @@ class Sentinel2Product(Product):
         for band_file_path in band_paths:
             # Disregard working directory as it would affect splicing indices.
             band_path = band_file_path.replace(self.working_directory, '')
+            if band_path.startswith('/warped'): continue
             band_path_split = band_path.split('_')
 
             band_name = band_path_split[-2]  # e.g. B03, SNWPRB, CLDPRB
@@ -135,8 +136,8 @@ class Sentinel1Product(Product):
         for band_file_path in band_paths:
             # Disregard working directory as it would affect splicing indices.
             band_path = band_file_path.replace(self.working_directory, '')
+            if band_path.startswith('/warped'): continue
             band_path_split = band_path.split('-')
-
             band_name = band_path_split[3].upper()  # VV, VH
             if band.name != band_name: continue
             band.path = band_file_path
