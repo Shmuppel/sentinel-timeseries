@@ -88,7 +88,7 @@ def main():
     # stack VH, VH, Dry becomes a ndarray
     s1_rgb = stack_arrays(vh_db_norm_dry, vh_db_norm_wet)  # (Dry, Dry, Wet)
     show(s1_rgb)
-    with rasterio.open('Image.tif', 'w', driver='GTiff', width=1080, height=720, count=3, dtype=s1_rgb.dtype) as tile:
+    with rasterio.open('Image.tif', 'w', driver='GTiff', width=2000, height=2000, count=3, dtype=s1_rgb.dtype) as tile:
         tile.write(s1_rgb)
 
 
