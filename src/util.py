@@ -77,7 +77,7 @@ def get_image_data(
 def s1_stats(index_stat, geodataframe, indexname):
     # count
     counts = [stats['count'] for stats in index_stat]
-    geodataframe['counts_' + indexname] = counts
+    geodataframe['count of ' + indexname] = counts
     return geodataframe
 
 
