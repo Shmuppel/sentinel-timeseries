@@ -1,11 +1,12 @@
 import json
+from typing import *
+
 import numpy as np
 import rasterio
 import rasterio.features
 from pyproj import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import shape, box
-
 
 def get_polygon_from_geojson(file_path: str):
     """ Returns a single shapely Polygon from a geojson file. """

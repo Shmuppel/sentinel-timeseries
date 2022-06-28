@@ -3,12 +3,12 @@ import os
 import re
 import shutil
 from abc import ABC
-import numpy as np
+from typing import Union
+
 import pyproj
 from osgeo import gdal
 
 from band import Band
-from util import get_image_data
 
 
 class Product(ABC):
@@ -25,60 +25,53 @@ class Product(ABC):
         self.product_id = product_id
         self.aoi = aoi
         self.warp = warp  # Whether the images should be warped to a CRS before processing
-        self.working_directory = f'{working_directory}/{self.product_id}'  # Directory to read and write temporary images
+        self.working_directory = os.path.join(working_directory, self.product_id)
         self.bands = {}  # Holds the actual product measurements
+        self.masks = {}  # Holds complimentary masks such as cloud or snow masks
         os.makedirs(self.working_directory, exist_ok=True)
 
-    def create_bands(self):
+    def warp_band(self, band: Band):
         """
         """
-        pass
-
-    def get_arrays(self):
-        """
-        """
-        pass
-
-    def warp_bands(self):
-        """
-        """
-        warped_dir = f'{self.working_directory}/warped/'
+        warped_dir = os.path.join(self.working_directory, 'warped')
         os.makedirs(warped_dir, exist_ok=True)
-        for band in self.bands.values():
-            warped_band_path = f'{warped_dir}/{band.band}.tiff'
-            if os.path.exists(warped_band_path):
-                band.path = warped_band_path
-                continue
-
-            print(f'Product {self.product_id}: warping band {band.band} to EPSG:{self.warp.to_epsg()}...')
+        warped_band_path = f'{warped_dir}/{band.name}.tiff'
+        # Only if a previous run did not already warp the band.
+        if not os.path.exists(warped_band_path):
+            print(f'Product {self.product_id}: warping band {band.name} to EPSG:{self.warp.to_epsg()}...')
             gdal.Warp(warped_band_path, band.path, dstSRS=f'EPSG:{self.warp.to_epsg()}')
-            band.path = warped_band_path
+        band.path = warped_band_path
 
-    def get_bands(self, bands: list[Band]):
+    def get_band(self, band: Union[Band, str]):
         """
         """
-        # Cloud and Snow masks are tiny and would only match Sentinel 2 imagery.
-        path_filters = ['.*MSK_CLDPRB_20m.jp2', '.*MSK_SNWPRB_20m.jp2']
-        path_filters.extend([band.get_path_filter() for band in bands])
-        path_filter_pattern = rf"({'|'.join(path_filters)})"
-
+        if type(band) == str: return self.__getitem__(band)
+        path_filter = band.get_path_filter()
         self.api.download(
             self.product_id,
-            nodefilter=lambda node_info: bool(re.search(path_filter_pattern, node_info['node_path'])),
+            nodefilter=lambda node_info: bool(re.search(path_filter, node_info['node_path'])),
             directory_path=self.working_directory
         )
-        self.create_bands()
-        if not all([band.band in self.bands.keys() for band in bands]):
-            raise ValueError("Not all bands were downloaded, make sure the combination of band and spatial resolution exists.")
-        if self.warp: self.warp_bands()
-        self.get_arrays()
+        self.set_band_file_path(band)
+        if self.warp: self.warp_band(band)
+        return band
+
+    def set_band_file_path(self, band: Band):
+        pass
 
     def remove(self):
+        """ """
         shutil.rmtree(f'{self.working_directory}')
         os.mkdir(f'{self.working_directory}/{self.product_id}')
 
-    def __getitem__(self, key):
-        return self.bands[key]
+    def __getitem__(self, band_name: Union[tuple[str], str]):
+        """ """
+        # If there are multiple bands being passed, just call __getitem__ for each of them.
+        if type(band_name) == tuple: return (self.__getitem__(band) for band in band_name)
+        band_options = [*self.bands.keys(), *self.masks.keys()]
+        if band_name not in band_options: raise KeyError(f"Invalid band name, options are: {band_options}")
+        band = self.bands[band_name]
+        return self.get_band(band)
 
     def __enter__(self):
         return self
@@ -88,61 +81,64 @@ class Product(ABC):
 
 
 class Sentinel2Product(Product):
+    def __init__(self, *args: dict, **kwargs: dict) -> None:
+        super().__init__(*args, **kwargs)
+        self.bands = {
+            'B01': Band(mission='Sentinel2', name='B01', spatial_resolution=60),
+            'B02': Band(mission='Sentinel2', name='B02', spatial_resolution=10),
+            'B03': Band(mission='Sentinel2', name='B03', spatial_resolution=10),
+            'B04': Band(mission='Sentinel2', name='B04', spatial_resolution=10),
+            'B05': Band(mission='Sentinel2', name='B05', spatial_resolution=20),
+            'B06': Band(mission='Sentinel2', name='B06', spatial_resolution=20),
+            'B07': Band(mission='Sentinel2', name='B07', spatial_resolution=20),
+            'B08': Band(mission='Sentinel2', name='B08', spatial_resolution=10),
+            'B8a': Band(mission='Sentinel2', name='B8a', spatial_resolution=20),
+            'B09': Band(mission='Sentinel2', name='B09', spatial_resolution=60),
+            'B10': Band(mission='Sentinel2', name='B10', spatial_resolution=60),
+            'B11': Band(mission='Sentinel2', name='B11', spatial_resolution=20),
+            'B12': Band(mission='Sentinel2', name='B12', spatial_resolution=20),
+        }
+        self.masks = {
+            'CLD': Band(mission='Sentinel2', name='CLD', spatial_resolution=20),
+            'SNW': Band(mission='Sentinel2', name='SNW', spatial_resolution=20),
+        }
 
-    def create_bands(self):
+    def set_band_file_path(self, band: Band):
+        """
+        This is an iterative solution, it may be possible to deduce the file path based on
+        the metadata returned from self.api.download as well.
+        """
         band_paths = glob.glob(f'{self.working_directory}/**/*.jp2', recursive=True)
         for band_file_path in band_paths:
+            # Disregard working directory as it would affect splicing indices.
             band_path = band_file_path.replace(self.working_directory, '')
             band_path_split = band_path.split('_')
-            band_number = band_path_split[-2]  # B03, SNWPRB, CLDPRB
-            band_number = band_number[1:] if band_number.startswith('B') else band_number[:-3]  # 03, SNW, CLD
+
+            band_name = band_path_split[-2]  # e.g. B03, SNWPRB, CLDPRB
+            if not band_name.startswith('B'): band_name = band_name[:-3]  # e.g. SNW, CLD
+            if band.name != band_name: continue
             spatial_resolution = int(band_path_split[-1][:-5])
-            if band_number in self.bands.keys(): continue
 
-            self.bands[band_number] = Band(
-                mission='Sentinel2',
-                band=band_number,
-                path=band_file_path,
-                spatial_resolution=spatial_resolution
-            )
-
-    def get_arrays(self):
-        bands = [band for band in self.bands.values()]
-        bands.sort(key=lambda band: band.spatial_resolution)
-        resample = None
-        for band in bands:
-            if band.array is not None: continue  # Already got the array of this band
-            band.array, band.array_affine_transform = get_image_data(band.path, self.aoi, resample)
-            if not resample: resample = band.array.shape
-
-    def mask_clouds_and_snow(self):
-        assert all((self.bands['CLD'], self.bands['SNW']))
-        clouds, snow = self.bands['CLD'].array, self.bands['SNW'].array
-        for band in self.bands.values():
-            if band.band == 'CLD' or band.band == 'SNW': continue
-            band.array = np.ma.array(band.array,
-                                     mask=((clouds > 0) | (snow > 0) | band.array.mask),
-                                     dtype=np.float32,
-                                     fill_value=-999)
+            band.path = band_file_path
+            band.spatial_resolution = spatial_resolution
 
 
 class Sentinel1Product(Product):
 
-    def create_bands(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bands = {
+            'VV': Band(mission='Sentinel1', name='VV'),
+            'VH': Band(mission='Sentinel1', name='VH'),
+        }
+
+    def set_band_file_path(self, band: Band):
         band_paths = glob.glob(f'{self.working_directory}/**/*.tiff', recursive=True)
         for band_file_path in band_paths:
+            # Disregard working directory as it would affect splicing indices.
             band_path = band_file_path.replace(self.working_directory, '')
             band_path_split = band_path.split('-')
-            band_number = band_path_split[3].upper()  # VV, VH
-            if band_number in self.bands.keys(): continue
-            self.bands[band_number] = Band(
-                mission='Sentinel1',
-                band=band_number,
-                path=band_file_path,
-            )
 
-    def get_arrays(self):
-        bands = [band for band in self.bands.values()]
-        for band in bands:
-            if band.array is not None: continue  # Already got the array of this band
-            band.array, band.array_affine_transform = get_image_data(band.path, self.aoi)
+            band_name = band_path_split[3].upper()  # VV, VH
+            if band.name != band_name: continue
+            band.path = band_file_path
