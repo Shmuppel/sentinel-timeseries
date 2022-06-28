@@ -1,11 +1,6 @@
 #load libraries
-from rasterstats import zonal_stats
 from src.util import *
-from src.data_exploration.sentinel_2.s2_indices import calculate_indices
-import matplotlib.pyplot as plt
-import shapely
-import geopandas as gpd
-
+from data_exploration.sentinel_2.s2_indices import calculate_indices
 
 #Load parcel map
 new_parcels, geoparcels = load_parcels(r"C:\Projects\pooling-detection\resources\study_area\BRP_AOI_RDNew.geojson")

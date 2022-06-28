@@ -3,8 +3,7 @@
 from rasterstats import zonal_stats
 from rasterio.plot import show
 from src.util import *
-from src.data_exploration.sentinel_2.s2_indices import calculate_indices
-import matplotlib.pyplot as plt
+from data_exploration.sentinel_2.s2_indices import calculate_indices
 import shapely
 #import shapefile
 

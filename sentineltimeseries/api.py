@@ -6,7 +6,7 @@ import pyproj
 import shapely.geometry
 from sentinelsat import SentinelAPI
 
-from products import Sentinel2Product, Sentinel1Product
+from .products import Sentinel2Product, Sentinel1Product
 
 
 class SentinelTimeseriesAPI:

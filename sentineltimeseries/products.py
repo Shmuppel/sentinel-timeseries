@@ -8,7 +8,7 @@ from typing import Union
 import pyproj
 from osgeo import gdal
 
-from band import Band
+from .band import Band
 
 
 class Product(ABC):

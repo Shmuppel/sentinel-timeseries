@@ -2,7 +2,7 @@ from datetime import date
 import numpy as np
 
 from rasterio.plot import show
-from util.arrays import get_band_as_array
+from sentineltimeseries.util.arrays import get_band_as_array
 
 
 def convert_to_decibel(band):

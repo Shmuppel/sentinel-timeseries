@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 from pyproj import CRS
 
-from api import *
-from util.shapes import get_polygon_from_geojson
+from sentineltimeseries.api import SentinelTimeseriesAPI
+from sentineltimeseries.util.shapes import get_polygon_from_geojson
 from process_sentinel1 import process_sentinel1
 from process_sentinel2 import process_sentinel2
 

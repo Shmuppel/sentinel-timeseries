@@ -3,7 +3,7 @@ from datetime import date
 import matplotlib.pyplot as plt
 
 from rasterstats import zonal_stats
-from util.arrays import get_bands_as_arrays, mask_clouds_and_snow
+from sentineltimeseries.util.arrays import get_bands_as_arrays, mask_clouds_and_snow
 
 
 def process_sentinel2(api, parcels):
