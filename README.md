@@ -22,8 +22,8 @@ To start interacting with the API first create a `SentinelTimeseriesAPI` object:
 api = SentinelTimeseriesAPI(
     username=os.getenv('COPERNICUS_HUB_USERNAME'),
     password=os.getenv('COPERNICUS_HUB_PASSWORD'),
-    aoi=your_area_of_interest,
-    warp=CRS('EPSG:4326'),
+    aoi=your_area_of_interest,  # shapely.geometry.shape
+    warp=CRS('EPSG:4326'),  # From pyproj.CRS
     working_directory='../resources/images'
 )
 ```
@@ -70,7 +70,7 @@ with numpy (see waterlogging example).
 
 ```python
 get_band_as_array(
-    image_path: str,
+    image_path: str,  # for example from Band.path
     crop_shape: shapely.geometry.shape,
     resample: tuple[int, int] = None
 )
