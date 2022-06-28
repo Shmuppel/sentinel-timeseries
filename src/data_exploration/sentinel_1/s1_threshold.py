@@ -157,7 +157,9 @@ full_stats_20200218, full_stats_20210619, full_stats_20211022 = stats_calc(pond2
 #%% Calculate counts of count & Plot the count of the poonding pixels
 s1_stats(full_stats_20200218, parcels, 'pooling_px')
 plot1_indices(parcels, 'counts_pooling_px', '2020-02-18 ')
-s1_stats(full_stats_20210619, parcels, 'pooling_pixels')
+
+s1_stats(full_stats_20210619, parcels, 'pooling_px')
 plot1_indices(parcels, 'counts_pooling_px', '2021-06-19 ')
-s1_stats(full_stats_20211022, parcels, 'pooling_pixels')
+
+s1_stats(full_stats_20211022, parcels, 'pooling_px')
 plot1_indices(parcels, 'counts_pooling_px', '2021-10-22 ')
