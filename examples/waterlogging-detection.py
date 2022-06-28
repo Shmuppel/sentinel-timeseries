@@ -23,8 +23,8 @@ def main():
         warp=CRS('EPSG:4326'),
         working_directory='../resources/images'
     )
-    process_sentinel1(api, parcels)
-    #process_sentinel2(api, parcels)
+    #process_sentinel1(api, parcels)
+    process_sentinel2(api, parcels)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 from abc import ABC
+from datetime import datetime
 from typing import Union
 
 import pyproj
@@ -19,11 +20,13 @@ class Product(ABC):
             product_id: str,
             aoi: dict,
             working_directory: str,
+            date: datetime,
             warp: pyproj.CRS = None,
     ):
         self.api = api
         self.product_id = product_id
         self.aoi = aoi
+        self.date = date
         self.warp = warp  # Whether the images should be warped to a CRS before processing
         self.working_directory = os.path.join(working_directory, self.product_id)
         self.bands = {}  # Holds the actual product measurements

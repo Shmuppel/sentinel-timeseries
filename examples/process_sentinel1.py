@@ -1,6 +1,6 @@
 from datetime import date
 import numpy as np
-
+from matplotlib import pyplot as plt
 from rasterio.plot import show
 from sentineltimeseries.util.arrays import get_band_as_array
 
@@ -19,7 +19,7 @@ def min_max_norm(band):
 
 
 def process_sentinel1(api, parcels):
-    sentinel1_products = api.get_sentinel1_products(date(2022, 1, 1), date(2022, 1, 7))
+    sentinel1_products = api.get_sentinel1_products(date(2022, 1, 1), date(2022, 5, 1))
     for product in sentinel1_products:
         vv, _ = get_band_as_array(product['VV'].path, api.aoi)
         vh, affine_transform = get_band_as_array(product['VH'].path, api.aoi)
@@ -41,6 +41,9 @@ def process_sentinel1(api, parcels):
         masked_band = np.ma.array(s1_rgb, mask=s1_rgb.mask, dtype=np.float32, fill_value=-999.)
         s1_rgb = masked_band.filled()
         s1_rgb = np.asarray(s1_rgb)
-        show(s1_rgb)
 
-
+        # Plot percentiles per parcel
+        date_string = product.date.strftime("%Y-%m-%d")
+        fig, ax = plt.subplots(figsize=(12, 8))
+        show(s1_rgb, ax=ax, title=date_string)
+        plt.savefig(f'./results/{date_string}')

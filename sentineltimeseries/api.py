@@ -43,6 +43,7 @@ class SentinelTimeseriesAPI:
             product_id=product_id,
             aoi=self.aoi,
             warp=self.warp,
+            date=products[product_id]['endposition'],
             working_directory=self.working_directory
         ) for product_id in self.get_available_products(products)]
 
@@ -64,6 +65,7 @@ class SentinelTimeseriesAPI:
             product_id=product_id,
             aoi=self.aoi,
             warp=self.warp,
+            date=products[product_id]['endposition'],
             working_directory=self.working_directory
         ) for product_id in self.get_available_products(products)]
 
