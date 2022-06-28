@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from pyproj import CRS
 
 from api import *
-from util import get_polygon_from_geojson
+from util.shapes import get_polygon_from_geojson
 from process_sentinel1_rgb import process_sentinel1_rgb
 from process_sentinel2 import process_sentinel2
 

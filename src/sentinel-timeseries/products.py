@@ -27,7 +27,6 @@ class Product(ABC):
         self.warp = warp  # Whether the images should be warped to a CRS before processing
         self.working_directory = os.path.join(working_directory, self.product_id)
         self.bands = {}  # Holds the actual product measurements
-        self.masks = {}  # Holds complimentary masks such as cloud or snow masks
         os.makedirs(self.working_directory, exist_ok=True)
 
     def warp_band(self, band: Band):
@@ -67,9 +66,9 @@ class Product(ABC):
     def __getitem__(self, band_name: Union[tuple[str], str]):
         """ """
         # If there are multiple bands being passed, just call __getitem__ for each of them.
-        if type(band_name) == tuple: return (self.__getitem__(band) for band in band_name)
-        band_options = [*self.bands.keys(), *self.masks.keys()]
-        if band_name not in band_options: raise KeyError(f"Invalid band name, options are: {band_options}")
+        if type(band_name) == tuple: return list(self.__getitem__(band) for band in band_name)
+        band_options = self.bands.keys()
+        if band_name not in band_options: raise KeyError(f"Invalid band name {band_name}, options are: {band_options}")
         band = self.bands[band_name]
         return self.get_band(band)
 
@@ -97,16 +96,15 @@ class Sentinel2Product(Product):
             'B10': Band(mission='Sentinel2', name='B10', spatial_resolution=60),
             'B11': Band(mission='Sentinel2', name='B11', spatial_resolution=20),
             'B12': Band(mission='Sentinel2', name='B12', spatial_resolution=20),
-        }
-        self.masks = {
             'CLD': Band(mission='Sentinel2', name='CLD', spatial_resolution=20),
             'SNW': Band(mission='Sentinel2', name='SNW', spatial_resolution=20),
         }
 
     def set_band_file_path(self, band: Band):
         """
-        This is an iterative solution, it may be possible to deduce the file path based on
-        the metadata returned from self.api.download as well.
+        TODO This is an iterative solution, it may be possible to deduce the file path based on
+        the metadata returned from self.api.download as well. That may also be generalizable
+        across products, if so you would only need a single set_band_file_path function.
         """
         band_paths = glob.glob(f'{self.working_directory}/**/*.jp2', recursive=True)
         for band_file_path in band_paths:

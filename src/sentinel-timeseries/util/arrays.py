@@ -1,22 +1,32 @@
-import json
 from typing import *
-
 import numpy as np
 import rasterio
 import rasterio.features
 from pyproj import CRS
 from rasterio.enums import Resampling
-from shapely.geometry import shape, box
-
-def get_polygon_from_geojson(file_path: str):
-    """ Returns a single shapely Polygon from a geojson file. """
-    with open(file_path, 'r') as f:
-        features = json.load(f)['features']
-        polygon = shape(features[0]["geometry"])
-    return polygon
+from shapely.geometry import box
 
 
-def get_image_data(
+def get_bands_as_arrays(bands, crop):
+    bands.sort(key=lambda band: band.spatial_resolution)
+    resample = None
+    affine_transform = None
+    band_arrays = {}
+    for band in bands:
+        band_array, affine_transform = get_band_as_array(band.path, crop, resample)
+        if not resample: resample = band_array.shape
+        band_arrays[band.name] = band_array
+    return band_arrays, affine_transform
+
+
+def mask_clouds_and_snow(array, cloud_mask_array, snow_mask_array):
+    return np.ma.array(array,
+                       mask=((cloud_mask_array > 0) | (snow_mask_array > 0) | array.mask),
+                       dtype=np.float32,
+                       fill_value=-999)
+
+
+def get_band_as_array(
         image_path: str,
         crop_shape,
         resample=None
@@ -48,6 +58,6 @@ def get_image_data(
                                                                        (window.height / data.shape[-2]))
         # Apply geometry mask.
         geometry_mask = rasterio.features.geometry_mask([crop_shape], data[0].shape, geometry_transform)
-        band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.int16, fill_value=0)
+        band_masked = np.ma.array(data[0], mask=geometry_mask, dtype=np.float32, fill_value=-999)
 
         return band_masked, geometry_transform
